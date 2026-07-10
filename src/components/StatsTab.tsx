@@ -1,16 +1,4 @@
-import { useState, useEffect } from "react";
-import { motion } from "motion/react";
-import { 
-  Activity, 
-  Cpu, 
-  TrendingUp, 
-  TrendingDown, 
-  Percent, 
-  Database, 
-  Layers, 
-  Clock, 
-  RefreshCw 
-} from "lucide-react";
+import { TrendingUp, TrendingDown, Percent } from "lucide-react";
 
 interface StatsTabProps {
   balance: number;
@@ -21,42 +9,6 @@ interface StatsTabProps {
 }
 
 export default function StatsTab({ balance, initialCapital, totalFees, totalTaxes, tradeCount }: StatsTabProps) {
-  // Mock live latency stream for realism
-  const [latency, setLatency] = useState(14);
-  const [latencyHistory, setLatencyHistory] = useState<number[]>(Array.from({ length: 15 }, () => 14 + Math.floor(Math.random() * 8)));
-  const [apiState, setApiState] = useState("CONNECTED");
-  const [cpuUsage, setCpuUsage] = useState(1.8);
-  const [programRunning, setProgramRunning] = useState(true);
-
-  useEffect(() => {
-    // Poll system and discord status
-    const checkStatus = async () => {
-      try {
-        const res = await fetch("/api/system/status");
-        if (res.ok) {
-          const data = await res.json();
-          setProgramRunning(data.isProgramRunning);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    checkStatus();
-    const intervalStatus = setInterval(checkStatus, 3000);
-
-    const intervalLatency = setInterval(() => {
-      const nextLat = Math.max(8, Math.min(65, Math.round(15 + (Math.random() - 0.5) * 12)));
-      setLatency(nextLat);
-      setLatencyHistory(prev => [...prev.slice(1), nextLat]);
-      setCpuUsage(parseFloat((1.2 + Math.random() * 1.5).toFixed(1)));
-    }, 1500);
-
-    return () => {
-      clearInterval(intervalStatus);
-      clearInterval(intervalLatency);
-    };
-  }, []);
-
   // Compute profit/loss
   const totalAmountEarned = balance - initialCapital;
   const roi = (totalAmountEarned / initialCapital) * 100;
@@ -64,102 +16,16 @@ export default function StatsTab({ balance, initialCapital, totalFees, totalTaxe
 
   return (
     <div className="space-y-6" id="stats-tab-root">
-      {/* Telemetry and System Diagnostics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Latency and Ping Card */}
-        <div className="bg-[#111827] border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Activity className="w-4 h-4 text-emerald-400" />
-              Kiwoom OpenAPI 통신 지연시간 (Ping)
-            </h3>
-            <span className={`h-2.5 w-2.5 rounded-full animate-pulse ${programRunning ? "bg-emerald-400" : "bg-red-400"}`} />
-          </div>
-
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold font-mono text-gray-100">{latency}</span>
-            <span className="text-xs text-gray-500 font-mono">ms</span>
-            <span className="text-[10px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 border border-emerald-900/30 rounded font-bold ml-auto">
-              REAL-TIME
-            </span>
-          </div>
-
-          {/* Sparkline Latency graph */}
-          <div className="h-12 flex items-end gap-1 bg-black/30 border border-gray-900 rounded-lg p-2 overflow-hidden">
-            {latencyHistory.map((val, idx) => {
-              const pct = Math.min(100, Math.max(10, (val / 70) * 100));
-              return (
-                <div
-                  key={idx}
-                  className="flex-1 bg-indigo-500/80 rounded-t"
-                  style={{ height: `${pct}%`, transition: "height 0.3s ease" }}
-                  title={`${val}ms`}
-                />
-              );
-            })}
-          </div>
-          <div className="flex justify-between text-[10px] text-gray-500 font-mono">
-            <span>Kiwoom Server (여의도)</span>
-            <span>최소: 9ms | 최대: 61ms</span>
-          </div>
-        </div>
-
-        {/* Local 32bit DLL Container Thread Health */}
-        <div className="bg-[#111827] border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Cpu className="w-4 h-4 text-indigo-400" />
-            32비트 로컬 OCX 모듈 가상화 상태
-          </h3>
-
-          <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-            <div className="bg-black/30 border border-gray-900 rounded-lg p-3">
-              <span className="text-[10px] text-gray-500 block">메모리 점유율</span>
-              <span className="font-bold text-gray-100 text-sm">42.8 MB</span>
-            </div>
-            <div className="bg-black/30 border border-gray-900 rounded-lg p-3">
-              <span className="text-[10px] text-gray-500 block">CPU 사용률 (OCX)</span>
-              <span className="font-bold text-gray-100 text-sm">{cpuUsage}%</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-[10px] text-gray-400 bg-gray-950 p-2.5 border border-gray-900 rounded-lg">
-            <Database className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-            <span>KHOpenAPI.ocx 등록 필터 상태: <span className="text-emerald-400 font-bold">NORMAL (32-bit wrapper active)</span></span>
-          </div>
-        </div>
-
-        {/* Engine Threading & Core Diagnostics */}
-        <div className="bg-[#111827] border border-gray-800 rounded-2xl p-5 shadow-xl space-y-4">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-amber-400" />
-            자동매매 알고리즘 엔진 제어반
-          </h3>
-
-          <div className="bg-black/30 border border-gray-900 rounded-xl p-4 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] text-gray-500 block">원격 제어 상태</span>
-              <span className={`text-xs font-bold font-sans ${programRunning ? "text-emerald-400" : "text-red-400"}`}>
-                {programRunning ? "🟢 RUNNING (감시 가동 중)" : "🔴 STOPPED (원격 중단됨)"}
-              </span>
-            </div>
-            <div className="text-right">
-              <span className="text-[10px] text-gray-500 block">총 누적 체결 횟수</span>
-              <span className="text-xs font-bold font-mono text-gray-100">{tradeCount}회</span>
-            </div>
-          </div>
-
-          <div className="text-[10px] text-gray-500 flex items-center gap-1">
-            <Clock className="w-3 h-3 text-gray-600" />
-            <span>장 마감 및 익일 가동 자동 갱신 헷징 연동 필터</span>
-          </div>
-        </div>
-      </div>
-
       {/* Asset Account Metrics Summary */}
       <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-6">
-        <h3 className="text-sm font-bold text-gray-200 border-b border-gray-900 pb-3">
-          종합 실시간 자산 계정 평가
-        </h3>
+        <div className="flex items-center justify-between border-b border-gray-900 pb-3">
+          <h3 className="text-sm font-bold text-gray-200">
+            종합 실시간 자산 계정 평가
+          </h3>
+          <span className="text-[11px] font-mono text-gray-500">
+            총 누적 체결 횟수: <span className="text-indigo-400 font-bold">{tradeCount}회</span>
+          </span>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Capital */}

@@ -136,18 +136,6 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
 
   return (
     <div className="space-y-6" id="settings-tab-root">
-      {/* Intro info card */}
-      <div className="bg-[#1e1b4b]/20 border border-indigo-900/40 rounded-2xl p-5 flex items-start gap-4">
-        <Server className="w-10 h-10 text-indigo-400 shrink-0 mt-1" />
-        <div className="space-y-1">
-          <h2 className="text-sm font-bold text-indigo-300">독립 로컬 구동환경 설정 매니저</h2>
-          <p className="text-xs text-gray-400 leading-relaxed">
-            키움 OpenAPI 모듈과 디스코드 봇은 모두 귀하의 Windows PC 상에서 독립적으로 백그라운드 구동됩니다.
-            아래에 입력하신 계좌 정보, API 보안 키, 디스코드 봇 크레덴셜은 브라우저 세션 및 로컬 스토리지를 통해 안전하게 영구 저장되어 유지됩니다.
-          </p>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column: Kiwoom OpenAPI & Trading Settings */}
         <div className="space-y-6">
@@ -155,7 +143,7 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
           <div className="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-4 shadow-xl">
             <h3 className="text-sm font-bold text-gray-200 flex items-center gap-2 border-b border-gray-900 pb-3">
               <Key className="w-4.5 h-4.5 text-indigo-400" />
-              키움 OpenAPI 및 계좌 연동 설정
+              키움 REST API 및 계좌 연동 설정
             </h3>
 
             {/* Trading Mode Radio */}
@@ -168,13 +156,13 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
                     setTradingMode("MOCK");
                     setCustomFeePercent("0.350"); // Autofill virtual fee
                   }}
-                  className={`py-2 px-3.5 rounded-lg text-xs font-semibold border transition-all text-center ${
+                  className={`py-2 px-3.5 rounded-lg text-[11px] font-semibold border transition-all text-center ${
                     tradingMode === "MOCK"
                       ? "bg-indigo-950/40 border-indigo-500 text-indigo-300"
                       : "bg-gray-900/40 border-gray-900 text-gray-400 hover:text-gray-300"
                   }`}
                 >
-                  모의투자 모드 (Mock Mode)
+                  모의투자 (https://mockapi.kiwoom.com/api/dostk/ordr)
                 </button>
                 <button
                   type="button"
@@ -182,25 +170,25 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
                     setTradingMode("REAL");
                     setCustomFeePercent("0.000"); // Autofill real exempt fee
                   }}
-                  className={`py-2 px-3.5 rounded-lg text-xs font-semibold border transition-all text-center ${
+                  className={`py-2 px-3.5 rounded-lg text-[11px] font-semibold border transition-all text-center ${
                     tradingMode === "REAL"
                       ? "bg-emerald-950/40 border-emerald-500 text-emerald-400"
                       : "bg-gray-900/40 border-gray-900 text-gray-400 hover:text-gray-300"
                   }`}
                 >
-                  실전매매 모드 (Real Mode)
+                  실전매매 (https://api.kiwoom.com/api/dostk/ordr)
                 </button>
               </div>
             </div>
 
             {/* Account Number */}
             <div>
-              <label className="text-xs text-gray-400 block mb-1">키움 증권 계좌번호</label>
+              <label className="text-xs text-gray-400 block mb-1">키움 증권 계좌번호 (10자리)</label>
               <input
                 type="text"
                 value={accountNo}
                 onChange={(e) => setAccountNo(e.target.value)}
-                placeholder="예: 5023-4921-11"
+                placeholder="예: 5023492111"
                 className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 font-mono text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
               />
             </div>
@@ -208,22 +196,22 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
             {/* API Key */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-400 block mb-1">키움 API Key (선택)</label>
+                <label className="text-xs text-gray-400 block mb-1">Kiwoom App Key (ID)</label>
                 <input
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Secret Key"
+                  placeholder="App Key (Client ID)"
                   className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 font-mono text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-400 block mb-1">API Secret</label>
+                <label className="text-xs text-gray-400 block mb-1">Kiwoom App Secret</label>
                 <input
                   type="password"
                   value={apiSecret}
                   onChange={(e) => setApiSecret(e.target.value)}
-                  placeholder="API Secret String"
+                  placeholder="App Secret"
                   className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 font-mono text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
                 />
               </div>
@@ -231,16 +219,18 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
 
             {/* Password Certificate */}
             <div>
-              <label className="text-xs text-gray-400 block mb-1">공인인증서 비밀번호</label>
+              <label className="text-xs text-gray-400 block mb-1">계좌 비밀번호 (4자리)</label>
               <input
                 type="password"
                 value={certPassword}
                 onChange={(e) => setCertPassword(e.target.value)}
-                placeholder="••••••••••••"
+                placeholder="••••"
+                maxLength={4}
                 className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 font-mono text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
               />
             </div>
           </div>
+
 
           {/* Unified Trading Fee Setting */}
           <div className="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-4 shadow-xl">
@@ -251,8 +241,8 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
             
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs text-gray-400">시뮬레이션 거래 수수료율</label>
-                <span className="text-[10px] text-emerald-400 font-mono">완전 면제계좌 완벽 대응</span>
+                <label className="text-xs text-gray-400">거래 집행 수수료율 설정</label>
+                <span className="text-[10px] text-emerald-400 font-mono">실계좌 면제 혜택 완벽 대응</span>
               </div>
               <div className="relative">
                 <input
@@ -264,7 +254,7 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
                 <span className="absolute right-3 top-2 text-xs text-gray-600">%</span>
               </div>
               <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">
-                사용자님의 증권 계좌가 <strong>실거래 수수료 평생 면제</strong> 조건인 경우, 격차 보정을 위해 요율을 <code className="bg-black text-emerald-400 px-1 py-0.2 rounded text-[9px]">0.000%</code> 또는 유관기관 요율 수준인 <code className="bg-black text-emerald-400 px-1 py-0.2 rounded text-[9px]">0.003%</code>로 직접 제어하여 모의투자와 동일한 결과를 확보할 수 있습니다.
+                사용자님의 증권 계좌가 <strong>실거래 수수료 평생 면제</strong> 조건인 경우, 정산 오차 방지를 위해 요율을 <code className="bg-black text-emerald-400 px-1 py-0.2 rounded text-[9px]">0.000%</code> 또는 유관기관 세금 요율인 <code className="bg-black text-emerald-400 px-1 py-0.2 rounded text-[9px]">0.003%</code>로 직접 조정하여 실거래 원장 정산과 한치의 오차도 없도록 세부 통제할 수 있습니다.
               </p>
             </div>
           </div>
@@ -485,7 +475,6 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
           </div>
         </div>
       </div>
-
       {/* Save Button Row */}
       <div className="flex justify-end pt-2">
         <button
@@ -504,3 +493,4 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
     </div>
   );
 }
+

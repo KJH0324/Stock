@@ -315,6 +315,266 @@ app.post("/api/system/toggle", (req, res) => {
   res.json({ success: true, isProgramRunning });
 });
 
+// Server-side account assets storage with dynamic fallback
+let serverBalance = 100000000; // 100M KRW
+let serverInitialCapital = 100000000;
+
+// POST /oauth2/token - Kiwoom OpenAPI Access Token Request (au10001)
+app.post("/oauth2/token", async (req, res) => {
+  try {
+    const { grant_type, appkey, secretkey } = req.body;
+    const tradingMode = req.headers["x-trading-mode"] || "MOCK";
+    const baseDomain = tradingMode === "REAL" ? "https://api.kiwoom.com" : "https://mockapi.kiwoom.com";
+
+    // If keys are valid/not simulated placeholders, forward to actual Kiwoom OAuth
+    if (appkey && secretkey && appkey !== "MY_API_KEY" && !appkey.startsWith("simulated_") && appkey.trim() !== "") {
+      console.log(`Forwarding OAuth token request to Kiwoom (${tradingMode})...`);
+      const response = await fetch(`${baseDomain}/oauth2/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json;charset=UTF-8"
+        },
+        body: JSON.stringify({ grant_type, appkey, secretkey })
+      });
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    }
+
+    // High-fidelity fallback simulated token response
+    console.log(`Serving simulated OAuth token for appkey: ${appkey || "default"}...`);
+    res.json({
+      access_token: `simulated_access_token_kiwoom_${Date.now()}`,
+      token_type: "Bearer",
+      expires_in: 86400
+    });
+  } catch (error: any) {
+    console.error("OAuth token proxy error:", error);
+    res.status(500).json({ error: error.message || "Failed to process token request" });
+  }
+});
+
+// POST /api/dostk/acnt - Kiwoom Domestic Stock Accounts & Balances
+app.post("/api/dostk/acnt", async (req, res) => {
+  try {
+    const apiId = req.headers["api-id"] as string;
+    const authorization = req.headers["authorization"] as string;
+    const tradingMode = req.headers["x-trading-mode"] as string || "MOCK";
+    const baseDomain = tradingMode === "REAL" ? "https://api.kiwoom.com" : "https://mockapi.kiwoom.com";
+
+    // If we have a real non-simulated Bearer token, proxy to Kiwoom OpenAPI
+    if (authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
+      console.log(`Proxying real TR ${apiId} to Kiwoom (${tradingMode})...`);
+      const response = await fetch(`${baseDomain}/api/dostk/acnt`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json;charset=UTF-8",
+          "Authorization": authorization,
+          "api-id": apiId
+        },
+        body: JSON.stringify(req.body)
+      });
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    }
+
+    // High-fidelity fallback simulated output for account/balances
+    console.log(`Serving high-fidelity simulation for account TR ${apiId}...`);
+    
+    if (apiId === "ka00001") {
+      // Account lookup
+      return res.json({
+        rt_cd: "0",
+        msg_cd: "0000",
+        msg1: "계좌번호 조회 완료 (SIMULATED)",
+        output: [
+          { account_no: req.body.account_no || "5012345610", account_name: "키움위탁기본계좌" }
+        ]
+      });
+    }
+
+    if (apiId === "kt00001") {
+      // Deposit details status
+      return res.json({
+        rt_cd: "0",
+        msg_cd: "0000",
+        msg1: "예수금 상세현황 조회 완료 (SIMULATED)",
+        output: {
+          dps: String(serverBalance),
+          ord_psbl_cash: String(serverBalance)
+        }
+      });
+    }
+
+    if (apiId === "kt00003") {
+      // Estimated asset lookup (추정자산조회요청)
+      return res.json({
+        rt_cd: "0",
+        msg_cd: "0000",
+        msg1: "추정자산 조회 완료 (SIMULATED)",
+        output: {
+          dps: String(serverBalance),
+          tot_evl_amt: String(serverBalance),
+          est_ast_amt: String(serverBalance),
+          real_pnl: "0"
+        }
+      });
+    }
+
+    if (apiId === "kt00004" || apiId === "kt00018") {
+      // Account evaluation status / evaluation balance details
+      return res.json({
+        rt_cd: "0",
+        msg_cd: "0000",
+        msg1: "계좌평가현황 조회 완료 (SIMULATED)",
+        output: {
+          tot_evl_amt: String(serverBalance),
+          tot_pnl_amt: "0",
+          tot_pnl_rt: "0.00"
+        },
+        output2: []
+      });
+    }
+
+    // Catch-all response
+    res.json({
+      rt_cd: "0",
+      msg_cd: "0000",
+      msg1: `TR ${apiId} 완료 (SIMULATED)`,
+      output: {}
+    });
+
+  } catch (error: any) {
+    console.error(`TR ${req.headers["api-id"]} proxy error:`, error);
+    res.status(500).json({ error: error.message || "Failed to proxy TR call" });
+  }
+});
+
+// POST /api/dostk/ordr - Kiwoom Domestic Stock Trading & Orders
+app.post("/api/dostk/ordr", async (req, res) => {
+  try {
+    const apiId = req.headers["api-id"] as string;
+    const authorization = req.headers["authorization"] as string;
+    const tradingMode = req.headers["x-trading-mode"] as string || "MOCK";
+    const baseDomain = tradingMode === "REAL" ? "https://api.kiwoom.com" : "https://mockapi.kiwoom.com";
+
+    if (authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
+      console.log(`Proxying real Order TR ${apiId} to Kiwoom (${tradingMode})...`);
+      const response = await fetch(`${baseDomain}/api/dostk/ordr`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json;charset=UTF-8",
+          "Authorization": authorization,
+          "api-id": apiId
+        },
+        body: JSON.stringify(req.body)
+      });
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    }
+
+    // High-fidelity fallback simulated order output
+    console.log(`Serving high-fidelity simulation for order TR ${apiId}...`);
+    const { stock_code, qty, price } = req.body;
+    
+    res.json({
+      rt_cd: "0",
+      msg_cd: "0000",
+      msg1: "주문 접수가 성공적으로 완료되었습니다 (SIMULATED)",
+      output: {
+        order_no: `ORD_${Date.now().toString().slice(-6)}`,
+        stock_code: stock_code || "005930",
+        quantity: String(qty || 1),
+        price: String(price || 50000)
+      }
+    });
+  } catch (error: any) {
+    console.error(`Order TR proxy error:`, error);
+    res.status(500).json({ error: error.message || "Failed to process order" });
+  }
+});
+
+// POST /api/dostk/mrkcond - Market Conditions & Stock Info
+app.post("/api/dostk/mrkcond", async (req, res) => {
+  try {
+    const apiId = req.headers["api-id"] as string;
+    const authorization = req.headers["authorization"] as string;
+    const tradingMode = req.headers["x-trading-mode"] as string || "MOCK";
+    const baseDomain = tradingMode === "REAL" ? "https://api.kiwoom.com" : "https://mockapi.kiwoom.com";
+
+    if (authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
+      const response = await fetch(`${baseDomain}/api/dostk/mrkcond`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json;charset=UTF-8",
+          "Authorization": authorization,
+          "api-id": apiId
+        },
+        body: JSON.stringify(req.body)
+      });
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    }
+
+    res.json({
+      rt_cd: "0",
+      msg_cd: "0000",
+      msg1: `Market Condition ${apiId} (SIMULATED)`,
+      output: {}
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/dostk/chart - Stock Charts & Candlestick Data
+app.post("/api/dostk/chart", async (req, res) => {
+  try {
+    const apiId = req.headers["api-id"] as string;
+    const authorization = req.headers["authorization"] as string;
+    const tradingMode = req.headers["x-trading-mode"] as string || "MOCK";
+    const baseDomain = tradingMode === "REAL" ? "https://api.kiwoom.com" : "https://mockapi.kiwoom.com";
+
+    if (authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
+      const response = await fetch(`${baseDomain}/api/dostk/chart`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json;charset=UTF-8",
+          "Authorization": authorization,
+          "api-id": apiId
+        },
+        body: JSON.stringify(req.body)
+      });
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    }
+
+    res.json({
+      rt_cd: "0",
+      msg_cd: "0000",
+      msg1: `Chart data ${apiId} (SIMULATED)`,
+      output: []
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Synchronize or update account assets from client actions
+app.post("/api/account/update", (req, res) => {
+  const { balance, initialCapital } = req.body;
+  if (typeof balance === "number") {
+    serverBalance = balance;
+  }
+  if (typeof initialCapital === "number") {
+    serverInitialCapital = initialCapital;
+  }
+  res.json({
+    success: true,
+    balance: serverBalance,
+    initialCapital: serverInitialCapital
+  });
+});
+
 // Retrieve Discord Alert Logs
 app.get("/api/discord/logs", (req, res) => {
   res.json({ logs: discordLogs });

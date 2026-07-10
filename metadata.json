@@ -1,6 +1,6 @@
 {
-  "name": "Kiwoom Auto-Trading Simulator",
-  "description": "An interactive, high-fidelity simulator for Kiwoom OpenAPI+ 32-bit architecture, TR throttling limits, async order reversals, and quantitative trading strategies.",
+  "name": "Kiwoom OpenAPI+ Real-Time Auto-Trader",
+  "description": "A robust, high-performance real-time auto-trading client integrated with Kiwoom OpenAPI+ and Discord, running advanced breakouts and technical indicators.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

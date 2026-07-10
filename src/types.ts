@@ -2,6 +2,7 @@ export enum StrategyType {
   LARRY_WILLIAMS = "LARRY_WILLIAMS",
   BOLLINGER_STOCHASTIC = "BOLLINGER_STOCHASTIC",
   BREAKOUT_52WEEK = "BREAKOUT_52WEEK",
+  QUANT_MOMENTUM_REVERSION = "QUANT_MOMENTUM_REVERSION",
 }
 
 export interface Stock {
@@ -15,6 +16,7 @@ export interface Stock {
   prevClose: number;
   transactionAmount: number; // in billion KRW (억 원)
   history250dHigh: number; // 52-week high (250-day peak)
+  maxVolumePerSecond: number; // Maximum transaction volume per second
   
   // Larry Williams Volatility Breakout values
   kValue: number;
@@ -29,6 +31,15 @@ export interface Stock {
   // Stochastic Oscillator (14, 3, 3)
   stochK: number;
   stochD: number;
+
+  // Premium Quant indicators
+  ema200?: number;
+  rsi14?: number;
+  macdLine?: number;
+  signalLine?: number;
+  macdHistogram?: number;
+  macdPrevHistogram?: number;
+  atr14?: number;
 }
 
 export interface TradeLog {
@@ -45,6 +56,8 @@ export interface TradeLog {
   tax: number;
   orderId: string;
   status: "CONFIRMED" | "UNCONFIRMED_REVERSAL" | "COMPLETED";
+  stopLossPrice?: number;
+  takeProfitPrice?: number;
 }
 
 export interface PortfolioStock {
@@ -55,6 +68,8 @@ export interface PortfolioStock {
   currentPrice: number;
   highestPriceSincePurchase: number; // for trailing stop
   targetPrice: number; // for breakout
+  stopLossPrice?: number;
+  takeProfitPrice?: number;
 }
 
 export interface ThrottlingMetrics {

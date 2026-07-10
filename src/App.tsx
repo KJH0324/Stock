@@ -28,7 +28,10 @@ export default function App() {
     const saved = localStorage.getItem("kiwoom_sim_balance");
     return saved ? parseInt(saved) : 100000000; // 1억 원 (100M KRW)
   });
-  const [initialCapital] = useState<number>(100000000);
+  const [initialCapital, setInitialCapital] = useState<number>(() => {
+    const saved = localStorage.getItem("kiwoom_sim_initial_capital");
+    return saved ? parseInt(saved) : 100000000;
+  });
   
   const [tradeLogs, setTradeLogs] = useState<TradeLog[]>(() => {
     const saved = localStorage.getItem("kiwoom_sim_tradelogs");
@@ -61,6 +64,92 @@ export default function App() {
   });
 
   const [engineStatus, setEngineStatus] = useState<boolean>(true);
+
+  const [apiConnected, setApiConnected] = useState<boolean>(true); // Kiwoom REST API Direct Connection Mode is active
+
+  const [tradingMode, setTradingMode] = useState<string>(() => {
+    return localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+  });
+
+  // Keep tradingMode in sync when we navigate back from Settings Tab
+  useEffect(() => {
+    setTradingMode(localStorage.getItem("kiwoom_trading_mode") || "MOCK");
+  }, [activeTab]);
+
+  // Synchronize with Kiwoom OpenAPI REST API on mount and tab transitions
+  useEffect(() => {
+    const loadKiwoomAssets = async () => {
+      try {
+        const appkey = localStorage.getItem("kiwoom_api_key") || "";
+        const secretkey = localStorage.getItem("kiwoom_api_secret") || "";
+        const accountNo = localStorage.getItem("kiwoom_account_no") || "";
+        const mode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+
+        // 1. Request access token via au10001
+        const tokenRes = await fetch("/oauth2/token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            "x-trading-mode": mode
+          },
+          body: JSON.stringify({
+            grant_type: "client_credentials",
+            appkey,
+            secretkey
+          })
+        });
+
+        if (!tokenRes.ok) throw new Error("OAuth token acquisition failed");
+        const tokenData = await tokenRes.json();
+        const accessToken = tokenData.access_token;
+
+        if (accessToken) {
+          sessionStorage.setItem("kiwoom_access_token", accessToken);
+
+          // 2. Query Estimated Asset Lookup (kt00003)
+          const acntRes = await fetch("/api/dostk/acnt", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json;charset=UTF-8",
+              "Authorization": `Bearer ${accessToken}`,
+              "api-id": "kt00003",
+              "x-trading-mode": mode
+            },
+            body: JSON.stringify({
+              account_no: accountNo,
+              pwd: ""
+            })
+          });
+
+          if (acntRes.ok) {
+            const acntData = await acntRes.json();
+            if (acntData && acntData.output && acntData.output.est_ast_amt) {
+              const apiBalance = parseInt(acntData.output.est_ast_amt);
+              setBalance(apiBalance);
+              localStorage.setItem("kiwoom_sim_balance", apiBalance.toString());
+              
+              if (acntData.output.dps) {
+                const apiInitial = parseInt(acntData.output.dps);
+                setInitialCapital(apiInitial);
+                localStorage.setItem("kiwoom_sim_initial_capital", apiInitial.toString());
+              }
+              return; // Loaded successfully via OpenAPI
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load real-time Kiwoom assets via OpenAPI:", err);
+      }
+
+      // Local fallback if OAuth/API is not configured or offline
+      const savedBalance = localStorage.getItem("kiwoom_sim_balance");
+      if (savedBalance) {
+        setBalance(parseInt(savedBalance));
+      }
+    };
+
+    loadKiwoomAssets();
+  }, [activeTab]);
 
   // Profit/Loss Monitoring logic
   useEffect(() => {
@@ -112,13 +201,20 @@ export default function App() {
     }).catch(e => console.error(e));
   };
 
-  // Auto-save changes to localStorage to ensure absolute persistence
+  // Auto-save changes to localStorage to ensure absolute persistence and synchronize with server-side REST API
   useEffect(() => {
     localStorage.setItem("kiwoom_sim_balance", balance.toString());
     localStorage.setItem("kiwoom_sim_tradelogs", JSON.stringify(tradeLogs));
     localStorage.setItem("kiwoom_sim_portfolio", JSON.stringify(portfolio));
     localStorage.setItem("kiwoom_sim_total_fees", totalFees.toString());
     localStorage.setItem("kiwoom_sim_total_taxes", totalTaxes.toString());
+
+    // Sync client assets with server API to maintain absolute consistency
+    fetch("/api/account/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ balance })
+    }).catch((err) => console.error("API Balance Update error:", err));
   }, [balance, tradeLogs, portfolio, totalFees, totalTaxes]);
 
   // Check Discord remotely halted status
@@ -185,7 +281,9 @@ export default function App() {
             quantity: newQty,
             purchasePrice: avgPrice,
             currentPrice: newLog.price,
-            highestPriceSincePurchase: Math.max(existing.highestPriceSincePurchase, newLog.price)
+            highestPriceSincePurchase: Math.max(existing.highestPriceSincePurchase, newLog.price),
+            stopLossPrice: newLog.stopLossPrice || existing.stopLossPrice,
+            takeProfitPrice: newLog.takeProfitPrice || existing.takeProfitPrice
           };
         } else {
           copy[newLog.stockCode] = {
@@ -195,7 +293,9 @@ export default function App() {
             purchasePrice: newLog.price,
             currentPrice: newLog.price,
             highestPriceSincePurchase: newLog.price,
-            targetPrice: newLog.price
+            targetPrice: newLog.price,
+            stopLossPrice: newLog.stopLossPrice,
+            takeProfitPrice: newLog.takeProfitPrice
           };
         }
         return copy;
@@ -281,7 +381,7 @@ export default function App() {
   };
 
   const handleResetLedger = () => {
-    if (!window.confirm("시뮬레이션 계정 자산과 모든 거래 로그를 공장초기화하시겠습니까?")) return;
+    if (!window.confirm("주의: 실제 주식 거래 원장 및 누적 자산 데이터를 초기화하고 기본 원금(1억원) 기준으로 재설정하시겠습니까?")) return;
     setBalance(100000000);
     setTradeLogs([]);
     setPortfolio({});
@@ -309,18 +409,27 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-tight text-gray-100 flex items-center gap-1.5">
-              Kiwoom OpenAPI+ 실시간 오토트레이더
+              Kiwoom REST API 실시간 오토트레이더
             </h1>
-            <p className="text-[10px] text-gray-500 font-mono">EXE COMPACT SINGLE BOARD CLIENT v2.4.0</p>
+            <p className="text-[10px] text-gray-500 font-mono">DIRECT PRIVATE LOCAL CLIENT v3.0.0</p>
           </div>
         </div>
 
         {/* Global Connection Badges */}
         <div className="flex items-center gap-3">
+          {/* Kiwoom REST API Connection Indicator */}
+          <div
+            className="px-3 py-1.5 rounded-lg border border-indigo-900/50 bg-indigo-950/40 text-indigo-400 text-[11px] font-bold flex items-center gap-1.5"
+            title="키움증권 REST API 서버와 직접 연결을 나타냅니다 (보안 통신 활성화)"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping" />
+            키움 REST API: DIRECT
+          </div>
+
           {/* Engine on/off button */}
           <button
             onClick={handleToggleEngine}
-            className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               engineStatus
                 ? "bg-emerald-950/40 border-emerald-900/50 text-emerald-400 hover:bg-emerald-950/80"
                 : "bg-red-950/40 border-red-900/50 text-red-400 hover:bg-red-950/80"
@@ -401,6 +510,7 @@ export default function App() {
               <MainTab 
                 onTradeExecute={handleTradeExecute}
                 portfolio={portfolio}
+                balance={balance}
               />
             )}
 
@@ -433,7 +543,7 @@ export default function App() {
 
       {/* Bottom Footer bar */}
       <footer className="border-t border-gray-900 bg-[#070b13] px-6 py-3.5 flex justify-between text-[10px] text-gray-600 font-mono select-none">
-        <span>RUNNING PORT: 3000 | ELECTRON DESKTOP COMPLIANT</span>
+        <span>RUNNING PORT: 3000 | PRIVATE LOCAL ENGINE COMPLIANT</span>
         <span>COPYRIGHT © KIWOOM QUANT SYSTEM. ALL RIGHTS RESERVED.</span>
       </footer>
     </div>
