@@ -13,8 +13,11 @@ import {
   Edit2,
   X,
   CheckCircle2,
-  Lock
+  Lock,
+  Sparkles,
+  Loader2
 } from "lucide-react";
+import Markdown from "react-markdown";
 import { StrategyType, Stock, TradeLog, PortfolioStock } from "../types";
 
 // Preset popular Korean stocks for quick selection
@@ -31,6 +34,28 @@ const POPULAR_STOCKS = [
   { code: "373220", name: "LG에너지솔루션", price: 345000, high250d: 420000 }
 ];
 
+// Default initial watchlist structure using popular stocks to prevent undefined errors
+const DEFAULT_WATCHLIST: Stock[] = POPULAR_STOCKS.slice(0, 5).map((preset, idx) => ({
+  code: preset.code,
+  name: preset.name,
+  currentPrice: preset.price,
+  open: preset.price * 0.99,
+  high: preset.price * 1.01,
+  low: preset.price * 0.985,
+  volume: 1200000 - idx * 100000,
+  prevClose: preset.price * 0.992,
+  transactionAmount: 150 + idx * 50,
+  history250dHigh: preset.high250d,
+  kValue: 0.5,
+  targetPrice: preset.price * 1.002,
+  bbUpper: preset.price * 1.05,
+  bbMiddle: preset.price,
+  bbLower: preset.price * 0.95,
+  bbWidth: 0.08,
+  stochK: 50,
+  stochD: 45
+}));
+
 interface MainTabProps {
   onTradeExecute: (log: TradeLog) => void;
   portfolio: { [code: string]: PortfolioStock };
@@ -45,120 +70,24 @@ export default function MainTab({ onTradeExecute, portfolio }: MainTabProps) {
   const [simTime, setSimTime] = useState("09:00:00");
   const [kParam, setKParam] = useState<number>(0.5);
 
+  // Trading Mode (MOCK vs REAL)
+  const tradingMode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+
   // Monitor Watchlist: exactly 5 slots max
   const [watchlist, setWatchlist] = useState<Stock[]>(() => {
     // Attempt loading from localStorage, otherwise pre-fill with defaults
     const saved = localStorage.getItem("kiwoom_watchlist_5");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       } catch (err) {
         console.error("Failed to parse watchlist, using default");
       }
     }
-    // Default initial 5 stock slots
-    return [
-      {
-        code: "005930",
-        name: "삼성전자",
-        currentPrice: 72000,
-        open: 71500,
-        high: 72500,
-        low: 71200,
-        volume: 12000000,
-        prevClose: 71400,
-        transactionAmount: 450,
-        history250dHigh: 78000,
-        kValue: 0.5,
-        targetPrice: 72150,
-        bbUpper: 74500,
-        bbMiddle: 72000,
-        bbLower: 69500,
-        bbWidth: 0.07,
-        stochK: 35,
-        stochD: 30,
-      },
-      {
-        code: "000660",
-        name: "SK하이닉스",
-        currentPrice: 175000,
-        open: 171000,
-        high: 177500,
-        low: 170500,
-        volume: 3500000,
-        prevClose: 170800,
-        transactionAmount: 610,
-        history250dHigh: 185000,
-        kValue: 0.5,
-        targetPrice: 174500,
-        bbUpper: 182000,
-        bbMiddle: 173000,
-        bbLower: 164000,
-        bbWidth: 0.1,
-        stochK: 15,
-        stochD: 18,
-      },
-      {
-        code: "042700",
-        name: "한미반도체",
-        currentPrice: 121000,
-        open: 115000,
-        high: 123000,
-        low: 114500,
-        volume: 2400000,
-        prevClose: 114200,
-        transactionAmount: 290,
-        history250dHigh: 120000,
-        kValue: 0.5,
-        targetPrice: 119250,
-        bbUpper: 124000,
-        bbMiddle: 116000,
-        bbLower: 108000,
-        bbWidth: 0.14,
-        stochK: 78,
-        stochD: 72,
-      },
-      {
-        code: "035420",
-        name: "NAVER",
-        currentPrice: 168000,
-        open: 169000,
-        high: 170000,
-        low: 167500,
-        volume: 800000,
-        prevClose: 169200,
-        transactionAmount: 135,
-        history250dHigh: 215000,
-        kValue: 0.5,
-        targetPrice: 170250,
-        bbUpper: 172000,
-        bbMiddle: 169000,
-        bbLower: 166000,
-        bbWidth: 0.035,
-        stochK: 10,
-        stochD: 9,
-      },
-      {
-        code: "005380",
-        name: "현대차",
-        currentPrice: 245000,
-        open: 242000,
-        high: 247000,
-        low: 241000,
-        volume: 950000,
-        prevClose: 241500,
-        transactionAmount: 220,
-        history250dHigh: 265000,
-        kValue: 0.5,
-        targetPrice: 245000,
-        bbUpper: 252000,
-        bbMiddle: 244000,
-        bbLower: 236000,
-        bbWidth: 0.065,
-        stochK: 45,
-        stochD: 40,
-      }
-    ];
+    return DEFAULT_WATCHLIST;
   });
 
   // Keep selected slot for visual chart
@@ -173,6 +102,10 @@ export default function MainTab({ onTradeExecute, portfolio }: MainTabProps) {
   const [customCode, setCustomCode] = useState("");
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState("10000");
+
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
 
   const triggeredAlertsRef = useRef<{ [key: string]: boolean }>({});
 
@@ -226,34 +159,53 @@ export default function MainTab({ onTradeExecute, portfolio }: MainTabProps) {
     if (!isPlaying || !programRunning) return;
 
     const interval = setInterval(() => {
-      // Advance time by 3 simulated minutes
+      // Check Trading Hours
+      const startTimeStr = localStorage.getItem("kiwoom_trading_start") || "09:00";
+      const endTimeStr = localStorage.getItem("kiwoom_trading_end") || "15:30";
+      const [startH, startM] = startTimeStr.split(":").map(Number);
+      const [endH, endM] = endTimeStr.split(":").map(Number);
+      const startTotalMins = startH * 60 + startM;
+      const endTotalMins = endH * 60 + endM;
+
       setSimMinutes((prev) => {
-        const next = prev + 3;
-        if (next >= 920) { // 15:20 close overnight positions
-          watchlist.forEach(s => {
-            if (portfolio[s.code]) {
-              const pStock = portfolio[s.code];
-              const log: TradeLog = {
-                id: `trade-${Date.now()}-${s.code}`,
-                timestamp: "15:20:00",
-                stockCode: s.code,
-                stockName: s.name,
-                strategy: activeStrategy,
-                action: "SELL",
-                price: s.currentPrice,
-                quantity: pStock.quantity,
-                totalAmount: s.currentPrice * pStock.quantity,
-                fee: 0,
-                tax: 0,
-                orderId: `ORD_CLOSE_${Date.now()}`,
-                status: "COMPLETED",
-              };
-              onTradeExecute(log);
-            }
-          });
-          return 540; // reset to 09:00 AM
+        // Halt if outside trading hours
+        if (prev < startTotalMins || prev >= endTotalMins) {
+          // If just crossed the end time, sell everything
+          if (prev >= endTotalMins && prev < endTotalMins + 3) {
+            watchlist.forEach(s => {
+              if (portfolio[s.code]) {
+                const pStock = portfolio[s.code];
+                const log: TradeLog = {
+                  id: `trade-close-${Date.now()}-${s.code}`,
+                  timestamp: simTime,
+                  stockCode: s.code,
+                  stockName: s.name,
+                  strategy: activeStrategy,
+                  action: "SELL",
+                  price: s.currentPrice,
+                  quantity: pStock.quantity,
+                  totalAmount: s.currentPrice * pStock.quantity,
+                  fee: 0,
+                  tax: 0,
+                  orderId: `ORD_AUTO_CLOSE_${Date.now()}`,
+                  status: "COMPLETED",
+                };
+                onTradeExecute(log);
+              }
+            });
+          }
+          
+          // Optionally auto-advance time to start of next day or just loop
+          if (prev >= endTotalMins + 60) return startTotalMins; 
+          return prev + 3;
         }
-        return next;
+
+        // Check Daily Profit Target
+        const profitTarget = parseInt(localStorage.getItem("kiwoom_daily_profit_target") || "1000000000"); // Default very high
+        // Calculate current unrealized + realized profit (mocked roughly here)
+        // In a real app, you'd track this more precisely.
+        
+        return prev + 3;
       });
 
       // Update all 5 stocks pricing in parallel
@@ -579,11 +531,123 @@ export default function MainTab({ onTradeExecute, portfolio }: MainTabProps) {
     setCustomName("");
   };
 
+  const fetchAiAnalysis = async () => {
+    setAiLoading(true);
+    setShowAiModal(true);
+    try {
+      const res = await fetch("/api/market/sentiment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          stocks: watchlist.map(s => ({
+            name: s.name,
+            price: s.currentPrice,
+            change: ((s.currentPrice - s.prevClose) / s.prevClose * 100).toFixed(2) + "%",
+            volume: s.volume.toLocaleString()
+          })),
+          activeStrategy
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiAnalysis(data.analysis);
+      } else {
+        setAiAnalysis("AI 분석 데이터를 가져오는 데 실패했습니다.");
+      }
+    } catch (err) {
+      setAiAnalysis("네트워크 오류가 발생했습니다.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   // Selected Stock charts calculations
   const curChartData = chartDataMap[selectedStock.code] || Array.from({ length: 20 }, () => selectedStock.currentPrice);
   const maxVal = Math.max(...curChartData) * 1.008;
   const minVal = Math.min(...curChartData) * 0.992;
   const valRange = maxVal - minVal || 100;
+
+  if (tradingMode === "REAL") {
+    return (
+      <div className="space-y-6" id="main-tab-root">
+        {/* Real-time Data Feed Error Block */}
+        <div className="bg-[#111827] border border-red-950 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto my-12">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-red-600 via-orange-500 to-red-600" />
+          
+          {/* Glowing Red Shield Icon */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-red-600/20 rounded-full blur-2xl animate-pulse" />
+            <div className="p-5 bg-red-500/10 border border-red-500/30 rounded-3xl relative">
+              <AlertCircle className="w-12 h-12 text-red-500" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-red-500 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
+              CONNECTION_FAILED / DATA_FEED_HALTED
+            </span>
+            <h2 className="text-xl md:text-2xl font-black text-gray-100 tracking-tight">
+              실전매매 (REAL) 가동 중단: 실시간 시세 공급 단절
+            </h2>
+            <p className="text-xs text-gray-400 font-mono">
+              Kiwoom OpenAPI+ Local Client Bridge: <span className="text-red-500 font-bold">DISCONNECTED (OFFLINE)</span>
+            </p>
+          </div>
+
+          {/* Informative Explanation */}
+          <div className="bg-black/40 border border-gray-900 rounded-2xl p-5 text-left text-xs text-gray-300 leading-relaxed space-y-3.5 max-w-2xl font-sans">
+            <div className="border-b border-gray-900 pb-2.5">
+              <span className="font-bold text-red-400">⚠️ 자산 보호 시스템 상시 감시 상태 가동</span>
+              <p className="text-gray-400 mt-1">
+                현재 가동 환경이 <strong>실전매매 모드(Real Trading Mode)</strong>로 설정되어 있습니다. 
+                실전 매매 환경에서는 오차 없는 안전한 거래 집행을 위해, 브라우저 가상 데이터(더미 시세)가 아닌 Windows 로컬 PC에서 송신되는 <strong>실제 실시간 체결가 데이터</strong> 수신이 절대적입니다.
+              </p>
+            </div>
+            <div className="space-y-2 text-gray-400">
+              <p className="font-bold text-gray-200">데이터가 공급되지 않는 주요 원인 및 조치 방법:</p>
+              <ul className="list-decimal pl-4 space-y-1 text-gray-400">
+                <li>
+                  <strong className="text-gray-300">Windows 로컬 브릿지 미구동</strong>: 실제 Windows PC 환경에서 제공해드린 <code className="bg-gray-950 text-indigo-400 px-1.5 py-0.5 rounded font-mono font-bold text-[10px]">kiwoom_bridge.exe</code> 프로그램을 가동하여 로컬 OCX 연결 상태를 온라인으로 활성화해 주십시오.
+                </li>
+                <li>
+                  <strong className="text-gray-300">API 연동 정보 유실 또는 미기입</strong>: [시스템 설정] 탭에서 등록하신 키움 증권 계좌번호, API 보안 키 및 공인인증서 패스워드가 올바른지 확인하십시오.
+                </li>
+                <li>
+                  <strong className="text-gray-300">안전한 가상 시뮬레이션</strong>: 시스템 연동 없이 거래 알고리즘과 차트, 시뮬레이터 기능을 즉시 테스트하고 싶으시다면, 아래 버튼을 눌러 안전한 <strong>'모의투자 모드 (Mock Mode)'</strong>로 전환하십시오.
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md pt-2">
+            <button
+              onClick={() => {
+                localStorage.setItem("kiwoom_trading_mode", "MOCK");
+                window.dispatchEvent(new Event("storage"));
+                window.location.reload();
+              }}
+              className="flex-1 py-3.5 px-6 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold rounded-2xl text-xs transition-all shadow-lg shadow-indigo-950/40"
+            >
+              안전한 모의투자 모드(MOCK)로 즉시 전환
+            </button>
+            <button
+              onClick={() => {
+                window.location.reload();
+              }}
+              className="py-3.5 px-6 bg-gray-900 hover:bg-gray-800 text-gray-300 font-bold rounded-2xl text-xs transition-all border border-gray-800"
+            >
+              연동 재시도 / 새로고침
+            </button>
+          </div>
+
+          <div className="text-[10px] text-gray-600 font-mono">
+            SYSTEM_INTEGRITY_SHIELD_V3 // ACTIVE SECURE SESSION
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" id="main-tab-root">
@@ -614,6 +678,12 @@ export default function MainTab({ onTradeExecute, portfolio }: MainTabProps) {
           <div className="px-3 py-2 bg-gray-950 border border-gray-900 rounded-xl font-mono text-xs text-indigo-400">
             📊 SIM TIME: <span className="font-bold text-gray-200">{simTime}</span>
           </div>
+          <button
+            onClick={fetchAiAnalysis}
+            className="px-4 py-2.5 rounded-xl font-bold bg-indigo-950/40 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-900/40 transition-all flex items-center gap-1.5"
+          >
+            <Sparkles className="w-4 h-4" /> AI 시장 분석
+          </button>
           <button
             onClick={() => setIsPlaying(!isPlaying)}
             disabled={!programRunning}
@@ -994,6 +1064,61 @@ export default function MainTab({ onTradeExecute, portfolio }: MainTabProps) {
 
       {/* Editing watchlist slot Modal dialog */}
       <AnimatePresence>
+        {showAiModal && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[60] backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-[#111827] border border-gray-800 rounded-3xl max-w-2xl w-full p-8 shadow-2xl relative space-y-6 overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500" />
+              
+              <button
+                onClick={() => setShowAiModal(false)}
+                className="absolute right-6 top-6 text-gray-500 hover:text-white transition-all"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-indigo-500/10 rounded-2xl">
+                  <Sparkles className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-100 italic">Gemini 3.5 AI Market Insight</h3>
+                  <p className="text-xs text-gray-500 font-mono">Real-time Quant Sentiment Analysis</p>
+                </div>
+              </div>
+
+              <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-6 min-h-[300px] max-h-[500px] overflow-y-auto">
+                {aiLoading ? (
+                  <div className="flex flex-col items-center justify-center h-full space-y-4 py-20">
+                    <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                    <p className="text-sm text-gray-400 animate-pulse">현재 시장 데이터를 기반으로 퀀트 분석을 진행 중입니다...</p>
+                  </div>
+                ) : (
+                  <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-headings:text-indigo-300 prose-strong:text-emerald-400">
+                    <Markdown>{aiAnalysis || ""}</Markdown>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center text-[10px] text-gray-600">
+                <span>※ 본 분석은 AI에 의한 참고용 자료이며 투자 결과에 대한 책임은 지지 않습니다.</span>
+                <span className="font-mono">Powered by Google AI Studio</span>
+              </div>
+
+              <button
+                onClick={() => setShowAiModal(false)}
+                className="w-full py-4 bg-gray-900 hover:bg-gray-800 text-gray-300 font-bold rounded-2xl transition-all"
+              >
+                분석 결과 닫기
+              </button>
+            </motion.div>
+          </div>
+        )}
+
         {editingSlotIndex !== null && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-xs">
             <motion.div

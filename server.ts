@@ -77,6 +77,44 @@ Provide your response in structured Markdown with clean Korean text. The structu
   }
 });
 
+// Market Sentiment Analysis Route
+app.post("/api/market/sentiment", async (req, res) => {
+  try {
+    const { stocks, activeStrategy } = req.body;
+
+    if (!ai) {
+      return res.status(503).json({
+        error: "Gemini API is not configured. Please add your GEMINI_API_KEY in Settings > Secrets.",
+      });
+    }
+
+    const prompt = `
+      당신은 전문 퀀트 투자 애널리스트입니다. 아래 제공된 실시간 감시 종목 데이터와 현재 선택된 전략(${activeStrategy})을 기반으로 시장 통찰력을 제공해주세요.
+      
+      [감시 종목 데이터]
+      ${JSON.stringify(stocks, null, 2)}
+      
+      다음 형식으로 응답해주세요 (JSON 아님, 마크다운 형식):
+      1. **시장 종합 의견**: 현재 전반적인 변동성과 추세에 대한 짧은 요약.
+      2. **전략 적합도**: 현재 장세가 ${activeStrategy} 전략에 얼마나 유리한지 (0~100점).
+      3. **종목별 특이사항**: 급등/급락 징후가 보이거나 기술적 지표가 특이한 종목 언급.
+      4. **리스크 권고**: 현재 시점에서 주의해야 할 매매 리스크.
+      
+      간결하고 전문적인 톤으로 작성해주세요. 한국어로 응답하세요.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: prompt,
+    });
+
+    res.json({ analysis: response.text });
+  } catch (error: any) {
+    console.error("Gemini Market Sentiment Error:", error);
+    res.status(500).json({ error: error.message || "Market analysis failed." });
+  }
+});
+
 // Discord alert log storage and global application state
 const discordLogs: any[] = [];
 let isProgramRunning = true;

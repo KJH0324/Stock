@@ -62,6 +62,56 @@ export default function App() {
 
   const [engineStatus, setEngineStatus] = useState<boolean>(true);
 
+  // Profit/Loss Monitoring logic
+  useEffect(() => {
+    if (!engineStatus) return;
+
+    // Daily Profit Target Halt
+    const profitTarget = parseInt(localStorage.getItem("kiwoom_daily_profit_target") || "9999999999");
+    const currentProfit = balance - initialCapital;
+    
+    if (currentProfit >= profitTarget) {
+      handleToggleEngine();
+      dispatchHaltAlert("PROFIT_TARGET_REACHED", currentProfit);
+    }
+
+    // Max Cumulative Loss Halt
+    const lossLimit = parseInt(localStorage.getItem("kiwoom_discord_loss_limit") || "50000000");
+    if (currentProfit <= -lossLimit) {
+      handleToggleEngine();
+      dispatchHaltAlert("LOSS_LIMIT_REACHED", currentProfit);
+    }
+  }, [balance, engineStatus]);
+
+  const dispatchHaltAlert = (reason: string, profit: number) => {
+    const webhookUrl = localStorage.getItem("kiwoom_discord_webhook") || "";
+    const alarmChannelId = localStorage.getItem("kiwoom_discord_alarm_channel_id") || "";
+    const mentionId = localStorage.getItem("kiwoom_discord_mention") || "";
+
+    const isProfit = reason === "PROFIT_TARGET_REACHED";
+    
+    fetch("/api/discord/alert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        webhookUrl,
+        mentionId,
+        channelId: alarmChannelId,
+        title: isProfit ? "🎯 [목표 수익 달성] 자동 매매 종료" : "🚨 [최대 손실 제한] 비상 가동 중지",
+        description: isProfit 
+          ? `설정하신 일일 목표 수익(${profit.toLocaleString()}원)에 도달하여 금일 매매를 안전하게 종료합니다.`
+          : `누적 손실이 제한선(-${Math.abs(profit).toLocaleString()}원)을 초과하여 자산 보호를 위해 가동을 즉시 중단합니다.`,
+        alertType: "SYSTEM_HALT",
+        color: isProfit ? 0x10b981 : 0xef4444,
+        fields: [
+          { name: "종료 사유", value: reason, inline: true },
+          { name: "현재 실현 손익", value: `${profit.toLocaleString()}원`, inline: true },
+          { name: "엔진 상태", value: "OFF (강제 중지)", inline: true }
+        ]
+      })
+    }).catch(e => console.error(e));
+  };
+
   // Auto-save changes to localStorage to ensure absolute persistence
   useEffect(() => {
     localStorage.setItem("kiwoom_sim_balance", balance.toString());

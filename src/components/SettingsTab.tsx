@@ -42,6 +42,9 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
   const [lossLimit, setLossLimit] = useState(() => localStorage.getItem("kiwoom_discord_loss_limit") || "500000");
   const [dropThreshold, setDropThreshold] = useState(() => localStorage.getItem("kiwoom_discord_drop_th") || "2.0");
   const [surgeThreshold, setSurgeThreshold] = useState(() => localStorage.getItem("kiwoom_discord_surge_th") || "3.0");
+  const [dailyProfitTarget, setDailyProfitTarget] = useState(() => localStorage.getItem("kiwoom_daily_profit_target") || "1000000");
+  const [tradingStartTime, setTradingStartTime] = useState(() => localStorage.getItem("kiwoom_trading_start") || "09:00");
+  const [tradingEndTime, setTradingEndTime] = useState(() => localStorage.getItem("kiwoom_trading_end") || "15:30");
 
   // Custom Fee Rate input (unifying mock and real)
   const [customFeePercent, setCustomFeePercent] = useState((currentFeeRate * 100).toFixed(3));
@@ -87,6 +90,9 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
     localStorage.setItem("kiwoom_discord_loss_limit", lossLimit);
     localStorage.setItem("kiwoom_discord_drop_th", dropThreshold);
     localStorage.setItem("kiwoom_discord_surge_th", surgeThreshold);
+    localStorage.setItem("kiwoom_daily_profit_target", dailyProfitTarget);
+    localStorage.setItem("kiwoom_trading_start", tradingStartTime);
+    localStorage.setItem("kiwoom_trading_end", tradingEndTime);
 
     // Apply custom fee rate
     const parsedFee = parseFloat(customFeePercent) / 100;
@@ -439,6 +445,40 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
                     className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 pr-8 font-mono text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
                   />
                   <span className="absolute right-3 top-2 text-xs text-gray-500">%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Daily Profit Target & Trading Hours */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">일일 목표 익절 금액 (KRW)</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={dailyProfitTarget}
+                    onChange={(e) => setDailyProfitTarget(e.target.value)}
+                    className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 pr-12 font-mono text-xs text-emerald-400 focus:outline-none focus:border-emerald-500"
+                  />
+                  <span className="absolute right-3 top-2 text-xs text-gray-600">₩</span>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">매매 자동 종료 시간</label>
+                <div className="flex gap-2">
+                  <input
+                    type="time"
+                    value={tradingStartTime}
+                    onChange={(e) => setTradingStartTime(e.target.value)}
+                    className="flex-1 bg-gray-950 border border-gray-900 rounded-lg p-2 font-mono text-[10px] text-gray-200 focus:outline-none focus:border-indigo-500"
+                  />
+                  <span className="text-gray-600 self-center">~</span>
+                  <input
+                    type="time"
+                    value={tradingEndTime}
+                    onChange={(e) => setTradingEndTime(e.target.value)}
+                    className="flex-1 bg-gray-950 border border-gray-900 rounded-lg p-2 font-mono text-[10px] text-gray-200 focus:outline-none focus:border-indigo-500"
+                  />
                 </div>
               </div>
             </div>
