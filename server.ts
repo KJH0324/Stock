@@ -77,6 +77,217 @@ Provide your response in structured Markdown with clean Korean text. The structu
   }
 });
 
+// Discord alert log storage and global application state
+const discordLogs: any[] = [];
+let isProgramRunning = true;
+let botStatusMessage = "Disconnected (비활성)";
+let botClient: any = null;
+let botClientId = "";
+let botClientSecret = "";
+
+// API Route to dispatch Discord notifications (via bot client or webhook)
+app.post("/api/discord/alert", async (req, res) => {
+  try {
+    const { webhookUrl, mentionId, title, description, fields, color, alertType, channelId } = req.body;
+    
+    const formattedFields = fields || [];
+    const embedColor = color || 0x10b981; // default to emerald green
+    const mentionString = mentionId ? `<@${mentionId}> ` : "";
+
+    const timestamp = new Date().toLocaleTimeString("ko-KR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+
+    const fullTimestampIso = new Date().toISOString();
+
+    const logEntry = {
+      id: `discord-${Date.now()}`,
+      timestamp,
+      alertType: alertType || "INFO",
+      title,
+      description,
+      fields: formattedFields,
+      color: embedColor,
+      mentionId,
+      sentToDiscord: false,
+      error: null as string | null
+    };
+
+    // Build the Discord Embed object
+    const embedPayload = {
+      title: title || "알림",
+      description: description || "설명 없음",
+      color: embedColor,
+      fields: formattedFields,
+      timestamp: fullTimestampIso,
+      footer: {
+        text: "Kiwoom OpenAPI+ Local Client Server"
+      }
+    };
+
+    let sentSuccessfully = false;
+
+    // 1. Try sending via Discord Bot Client if initialized and channelId is supplied
+    if (botClient && botClient.readyAt && channelId) {
+      try {
+        const channel = await botClient.channels.fetch(channelId);
+        if (channel && typeof channel.send === "function") {
+          await channel.send({
+            content: `${mentionString}🚨 **[Kiwoom Auto-Trader 선조치 보고]**\n알고리즘 매매가 지체 없이 체결 처리된 후 디스코드 로그 채널로 전송된 보고서입니다.`,
+            embeds: [embedPayload]
+          });
+          sentSuccessfully = true;
+          logEntry.sentToDiscord = true;
+        }
+      } catch (botErr: any) {
+        console.error("Failed to send message via Discord Bot Client:", botErr);
+        logEntry.error = `Bot Error: ${botErr.message}`;
+      }
+    }
+
+    // 2. Fallback or double-post via Webhook URL if provided
+    if (!sentSuccessfully && webhookUrl && webhookUrl.startsWith("http")) {
+      try {
+        const payload = {
+          content: `${mentionString}🚨 **[Kiwoom Auto-Trader 선조치 보고]**\n알고리즘 매매가 지체 없이 체결 처리된 후 디스코드 로그 채널로 전송된 보고서입니다.`,
+          embeds: [embedPayload]
+        };
+
+        const response = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          sentSuccessfully = true;
+          logEntry.sentToDiscord = true;
+        } else {
+          const text = await response.text();
+          logEntry.error = logEntry.error 
+            ? `${logEntry.error} | Webhook HTTP Error: ${response.status} - ${text}` 
+            : `Webhook HTTP Error: ${response.status} - ${text}`;
+        }
+      } catch (err: any) {
+        logEntry.error = logEntry.error 
+          ? `${logEntry.error} | Webhook Connection Error: ${err.message}` 
+          : `Webhook Connection Error: ${err.message}`;
+      }
+    }
+
+    if (!sentSuccessfully && !webhookUrl && !channelId) {
+      logEntry.error = "Webhook URL 및 Discord 채널 ID가 미등록되었습니다. (시뮬레이터 로컬 로그 저장)";
+    }
+
+    // Add to logs and keep max 100 entries
+    discordLogs.unshift(logEntry);
+    if (discordLogs.length > 100) {
+      discordLogs.pop();
+    }
+
+    res.json({ success: true, log: logEntry });
+  } catch (error: any) {
+    console.error("Discord Alert Endpoint Error:", error);
+    res.status(500).json({ error: error.message || "Failed to dispatch alert." });
+  }
+});
+
+// Configure or Register Discord Bot Client Dynamically
+app.post("/api/config/discord-bot", async (req, res) => {
+  try {
+    const { token, clientId, clientSecret, guildId, logChannelId, alarmChannelId } = req.body;
+
+    botClientId = clientId || "";
+    botClientSecret = clientSecret || "";
+
+    if (!token) {
+      if (botClient) {
+        botClient.destroy();
+        botClient = null;
+      }
+      botStatusMessage = "Disconnected (비활성)";
+      return res.json({ success: true, status: botStatusMessage });
+    }
+
+    // Re-initialize Discord Client
+    if (botClient) {
+      botClient.destroy();
+      botClient = null;
+    }
+
+    const { Client, GatewayIntentBits } = await import("discord.js");
+    
+    const client = new Client({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+      ]
+    });
+
+    client.on("ready", () => {
+      console.log(`🤖 Discord bot running as: ${client.user?.tag}`);
+      botStatusMessage = `🟢 Connected as ${client.user?.tag}`;
+    });
+
+    client.on("messageCreate", async (message: any) => {
+      if (message.author.bot) return;
+
+      // Filter by Guild if provided
+      if (guildId && message.guildId !== guildId) return;
+
+      const content = message.content.trim().toLowerCase();
+
+      if (content === "!stop" || content === "!중단") {
+        isProgramRunning = false;
+        await message.reply("🛑 **[Kiwoom Auto-Trader]** 디스코드 원격 중단 명령이 수신되었습니다. 즉시 실시간 감시 스케줄 및 시뮬레이션을 전면 정지합니다.");
+      } else if (content === "!start" || content === "!재개") {
+        isProgramRunning = true;
+        await message.reply("▶️ **[Kiwoom Auto-Trader]** 원격 기동 명령 수신. 실시간 오토트레이더 감시 상태를 다시 시작합니다.");
+      } else if (content === "!status" || content === "!상태") {
+        await message.reply(`🤖 **[Kiwoom Auto-Trader 실시간 진단 보고]**\n- **엔진가동 상태**: ${isProgramRunning ? "🟢 RUNNING (정상 기동 중)" : "🔴 STOPPED (원격 제어 정지됨)"}\n- **로그 수신 채널 ID**: \`${logChannelId || "미등록"}\`\n- **경보 수신 채널 ID**: \`${alarmChannelId || "미등록"}\``);
+      }
+    });
+
+    botClient = client;
+    await client.login(token);
+
+    res.json({ success: true, status: "Connected successfully" });
+  } catch (error: any) {
+    console.error("Discord Bot Login Failure:", error);
+    botStatusMessage = `🔴 Error: ${error.message}`;
+    res.json({ success: false, error: error.message });
+  }
+});
+
+// Retrieve System and Discord Status
+app.get("/api/system/status", (req, res) => {
+  res.json({
+    isProgramRunning,
+    botStatus: botStatusMessage,
+    logCount: discordLogs.length
+  });
+});
+
+// Toggle running state manually from client console
+app.post("/api/system/toggle", (req, res) => {
+  isProgramRunning = !isProgramRunning;
+  res.json({ success: true, isProgramRunning });
+});
+
+// Retrieve Discord Alert Logs
+app.get("/api/discord/logs", (req, res) => {
+  res.json({ logs: discordLogs });
+});
+
+// Clear Discord Alert Logs
+app.post("/api/discord/clear-logs", (req, res) => {
+  discordLogs.length = 0;
+  res.json({ success: true });
+});
+
 async function start() {
   // Configure Vite middleware in development or serve static files in production
   if (process.env.NODE_ENV !== "production") {
