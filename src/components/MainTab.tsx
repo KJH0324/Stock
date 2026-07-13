@@ -843,7 +843,7 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
       <div className="bg-[#111827] border border-gray-800 rounded-2xl p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xl">
         <div className="space-y-1">
           <h2 className="text-md font-bold text-gray-100 flex items-center gap-2">
-            오늘의 오토트레이더 감시 종목 (최대 5선)
+            감시 종목
           </h2>
         </div>
 
@@ -1243,11 +1243,8 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-100 flex items-center gap-2">
-                실시간 알고리즘 매매 백테스트 시뮬레이터 (Interactive Simulator)
+                백테스트 시뮬레이터
               </h3>
-              <p className="text-[11.5px] text-gray-400 mt-1 leading-relaxed">
-                {selectedStock.name} ({selectedStock.code}) 종목의 시계열 시세 흐름에 알고리즘 인자를 동적 시뮬레이션합니다.
-              </p>
             </div>
           </div>
         </div>
@@ -1377,11 +1374,11 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
         {/* Growth Curve Chart */}
         <div className="space-y-3">
           <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
-            시뮬레이션 자산 성장 곡선 (Equity Growth Curve)
+            자산 성장 곡선
           </span>
           <div className="w-full h-48 bg-black/40 border border-gray-900 rounded-xl relative p-3 flex items-center justify-center">
             {backtestRes.equityCurve.length === 0 ? (
-              <span className="text-xs text-gray-500 font-mono italic">시뮬레이션 데이터 산출 대기 중</span>
+              <span className="text-xs text-gray-500 font-mono italic">데이터 산출 대기 중</span>
             ) : (
               <>
                 <svg className="w-full h-full overflow-visible">

@@ -289,45 +289,6 @@ export default function SettingsTab({ onFeeRateChange, currentFeeRate }: Setting
               </span>
             </div>
 
-            {/* Discord Bot Client ID & Client Secret */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">Discord Client ID (애플리케이션 ID)</label>
-                <input
-                  type="text"
-                  value={discordClientId}
-                  onChange={(e) => setDiscordClientId(e.target.value)}
-                  placeholder="예: 1109431..."
-                  className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 font-mono text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">Discord Client Secret (시크릿 ID)</label>
-                <input
-                  type="password"
-                  value={discordClientSecret}
-                  onChange={(e) => setDiscordClientSecret(e.target.value)}
-                  placeholder="Secret String"
-                  className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 font-mono text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-            </div>
-
-            {/* Dynamic Bot Invite Link */}
-            {discordClientId && (
-              <div className="bg-indigo-950/20 border border-indigo-900/40 rounded-xl p-3 flex justify-between items-center">
-                <span className="text-[10px] text-gray-400">간편 봇 초대 링크가 생성되었습니다:</span>
-                <a
-                  href={`https://discord.com/oauth2/authorize?client_id=${discordClientId}&permissions=8&scope=bot`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-[10px] transition-all"
-                >
-                  서버에 봇 초대하기 ↗
-                </a>
-              </div>
-            )}
-
             {/* Webhook URL */}
             <div>
               <label className="text-xs text-gray-400 block mb-1">Discord Webhook URL (경보/로그 공통)</label>
