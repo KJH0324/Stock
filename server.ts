@@ -317,6 +317,7 @@ app.post("/api/system/toggle", (req, res) => {
 
 // Server-side account assets storage with dynamic fallback
 let serverBalance = 100000000; // 100M KRW
+let serverPortfolio: { [code: string]: any } = {};
 let serverInitialCapital = 100000000;
 
 // POST /oauth2/token - Kiwoom OpenAPI Access Token Request (au10001)
@@ -405,7 +406,20 @@ app.post("/api/dostk/acnt", async (req, res) => {
       });
     }
 
+
+    if (apiId === "kt00002") {
+      // Stock Holdings lookup
+      const holdingList = Object.values(serverPortfolio);
+      return res.json({
+        rt_cd: "0",
+        msg_cd: "0000",
+        msg1: "보유주식 잔고 조회 완료 (SIMULATED)",
+        output: holdingList
+      });
+    }
+
     if (apiId === "kt00003") {
+
       // Estimated asset lookup (추정자산조회요청)
       return res.json({
         rt_cd: "0",
@@ -436,6 +450,41 @@ app.post("/api/dostk/acnt", async (req, res) => {
     }
 
     // Catch-all response
+
+    const isBuy = apiId === "kt10000";
+    const qty = parseInt(req.body.qty || "0", 10);
+    const price = parseInt(req.body.price || "0", 10);
+    const stockCode = req.body.stock_code;
+    const totalAmount = qty * price;
+    
+    if (isBuy) {
+      if (serverBalance >= totalAmount) {
+        serverBalance -= totalAmount;
+        if (!serverPortfolio[stockCode]) {
+          serverPortfolio[stockCode] = {
+            stockCode,
+            quantity: qty,
+            purchasePrice: price,
+            highestPriceSincePurchase: price
+          };
+        } else {
+          const p = serverPortfolio[stockCode];
+          const totalQty = p.quantity + qty;
+          const newAvg = ((p.quantity * p.purchasePrice) + (qty * price)) / totalQty;
+          p.quantity = totalQty;
+          p.purchasePrice = newAvg;
+        }
+      }
+    } else {
+      if (serverPortfolio[stockCode] && serverPortfolio[stockCode].quantity >= qty) {
+        serverBalance += totalAmount;
+        serverPortfolio[stockCode].quantity -= qty;
+        if (serverPortfolio[stockCode].quantity === 0) {
+          delete serverPortfolio[stockCode];
+        }
+      }
+    }
+
     res.json({
       rt_cd: "0",
       msg_cd: "0000",

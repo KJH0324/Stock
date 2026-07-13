@@ -19,9 +19,11 @@ import MainTab from "./components/MainTab";
 import StatsTab from "./components/StatsTab";
 import LogsTab from "./components/LogsTab";
 import SettingsTab from "./components/SettingsTab";
+import ManualTab from "./components/ManualTab";
+import { ShoppingCart } from "lucide-react";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<"MAIN" | "STATS" | "LOGS" | "SETTINGS">("MAIN");
+  const [activeTab, setActiveTab] = useState<"MAIN" | "MANUAL" | "STATS" | "LOGS" | "SETTINGS">("MAIN");
   
   // Real-time account details
   const [balance, setBalance] = useState<number>(() => {
@@ -32,6 +34,98 @@ export default function App() {
     const saved = localStorage.getItem("kiwoom_sim_initial_capital");
     return saved ? parseInt(saved) : 100000000;
   });
+
+// Fetch real-time balance and holdings from API
+  useEffect(() => {
+    const fetchAccountData = async () => {
+      const mode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+      const accessToken = sessionStorage.getItem("kiwoom_access_token");
+      const accountNo = localStorage.getItem("kiwoom_account_no");
+
+      if (!accessToken || !accountNo) return;
+
+      try {
+        const res = await fetch("/api/dostk/acnt", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            "Authorization": `Bearer ${accessToken}`,
+            "api-id": "kt00001",
+            "x-trading-mode": mode
+          },
+          body: JSON.stringify({
+            account_no: accountNo
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.output?.ord_psbl_cash) {
+            const fetchedBalance = parseInt(data.output.ord_psbl_cash, 10);
+            if (!isNaN(fetchedBalance)) {
+              setBalance(fetchedBalance);
+              localStorage.setItem("kiwoom_sim_balance", String(fetchedBalance));
+            }
+          }
+        }
+        
+        // Fetch Holdings
+        const resHoldings = await fetch("/api/dostk/acnt", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            "Authorization": `Bearer ${accessToken}`,
+            "api-id": "kt00002",
+            "x-trading-mode": mode
+          },
+          body: JSON.stringify({ account_no: accountNo })
+        });
+        
+        if (resHoldings.ok) {
+           const dataH = await resHoldings.json();
+           if (dataH?.output && Array.isArray(dataH.output)) {
+             setPortfolio(prev => {
+               const newPort = { ...prev };
+               const currentCodes = new Set(dataH.output.map(o => o.stockCode || o.pdno));
+               
+               Object.keys(newPort).forEach(code => {
+                 if (!currentCodes.has(code)) {
+                   delete newPort[code];
+                 }
+               });
+               
+               dataH.output.forEach((h: any) => {
+                 const code = h.stockCode || h.pdno;
+                 const qty = parseInt(h.quantity || h.hldg_qty || "0", 10);
+                 const price = parseInt(h.purchasePrice || h.pchs_avg_pric || "0", 10);
+                 if (qty > 0) {
+                   if (newPort[code]) {
+                      newPort[code].quantity = qty;
+                      newPort[code].purchasePrice = price;
+                   } else {
+                      newPort[code] = {
+                        code: code, name: h.name || code, currentPrice: price, targetPrice: price,
+                        quantity: qty,
+                        purchasePrice: price,
+                        highestPriceSincePurchase: price
+                      };
+                   }
+                 }
+               });
+               localStorage.setItem("kiwoom_sim_portfolio", JSON.stringify(newPort));
+               return newPort;
+             });
+           }
+        }
+      } catch (err) {
+        console.error("Failed to fetch account data from API:", err);
+      }
+    };
+
+    fetchAccountData();
+    const intervalId = setInterval(fetchAccountData, 2000); // Poll every 2s
+    return () => clearInterval(intervalId);
+  }, []);
   
   const [tradeLogs, setTradeLogs] = useState<TradeLog[]>(() => {
     const saved = localStorage.getItem("kiwoom_sim_tradelogs");
@@ -247,13 +341,47 @@ export default function App() {
     }
   };
 
-  const handleTradeExecute = (newLog: TradeLog) => {
+  const handleTradeExecute = async (newLog: TradeLog) => {
     // 1. Calculate Fees & Taxes
     const feeRate = customFeeRate;
     const taxRate = newLog.action === "SELL" ? 0.0020 : 0; // 0.20% Securities tax
 
     const computedFee = Math.round(newLog.totalAmount * feeRate);
     const computedTax = Math.round(newLog.totalAmount * taxRate);
+
+    // Call REST API to execute order (kt10000: Buy, kt10001: Sell)
+    try {
+      const mode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+      const accessToken = sessionStorage.getItem("kiwoom_access_token") || "";
+      const accountNo = localStorage.getItem("kiwoom_account_no") || "";
+      const apiId = newLog.action === "BUY" ? "kt10000" : "kt10001";
+
+      const orderRes = await fetch("/api/dostk/ordr", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json;charset=UTF-8",
+          "Authorization": `Bearer ${accessToken}`,
+          "api-id": apiId,
+          "x-trading-mode": mode
+        },
+        body: JSON.stringify({
+          account_no: accountNo,
+          stock_code: newLog.stockCode,
+          qty: String(newLog.quantity),
+          price: String(newLog.price)
+        })
+      });
+
+      if (!orderRes.ok) throw new Error("Order API request failed");
+      const orderData = await orderRes.json();
+      
+      // Update log with actual Order No from API if available
+      if (orderData?.output?.order_no) {
+        newLog.orderId = orderData.output.order_no;
+      }
+    } catch (err) {
+      console.error("Order API transmission error:", err);
+    }
 
     const logEntry: TradeLog = {
       ...newLog,
@@ -446,7 +574,7 @@ export default function App() {
       </header>
 
       {/* Main Tabs Navigator */}
-      <div className="bg-[#0b101c] px-6 border-b border-gray-900/60 flex gap-2">
+      <div className="bg-[#0b101c] px-6 border-b border-gray-900/60 flex gap-2 overflow-x-auto whitespace-nowrap">
         <button
           onClick={() => setActiveTab("MAIN")}
           className={`px-4 py-3.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
@@ -457,6 +585,18 @@ export default function App() {
         >
           <LineChart className="w-4 h-4" />
           메인 거래보드
+        </button>
+
+        <button
+          onClick={() => setActiveTab("MANUAL")}
+          className={`px-4 py-3.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
+            activeTab === "MANUAL"
+              ? "border-indigo-500 text-indigo-400"
+              : "border-transparent text-gray-500 hover:text-gray-300"
+          }`}
+        >
+          <ShoppingCart className="w-4 h-4" />
+          수동 거래
         </button>
 
         <button
@@ -510,6 +650,13 @@ export default function App() {
               <MainTab 
                 onTradeExecute={handleTradeExecute}
                 portfolio={portfolio}
+                balance={balance}
+              />
+            )}
+
+            {activeTab === "MANUAL" && (
+              <ManualTab
+                onTradeExecute={handleTradeExecute}
                 balance={balance}
               />
             )}

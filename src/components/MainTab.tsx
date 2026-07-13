@@ -24,36 +24,36 @@ import { StrategyType, Stock, TradeLog, PortfolioStock } from "../types";
 
 // Preset popular Korean stocks for quick selection (30 items)
 const POPULAR_STOCKS = [
-  { code: "005930", name: "삼성전자", price: 72000, high250d: 78000, maxVolumePerSecond: 2500 },
-  { code: "000660", name: "SK하이닉스", price: 175000, high250d: 185000, maxVolumePerSecond: 1000 },
-  { code: "042700", name: "한미반도체", price: 121000, high250d: 125000, maxVolumePerSecond: 800 },
-  { code: "035420", name: "NAVER", price: 168000, high250d: 215000, maxVolumePerSecond: 600 },
-  { code: "005380", name: "현대차", price: 245000, high250d: 265000, maxVolumePerSecond: 500 },
-  { code: "035720", name: "카카오", price: 42000, high250d: 59000, maxVolumePerSecond: 1500 },
-  { code: "068270", name: "셀트리온", price: 191000, high250d: 210000, maxVolumePerSecond: 400 },
-  { code: "005490", name: "POSCO홀딩스", price: 375000, high250d: 490000, maxVolumePerSecond: 300 },
-  { code: "000270", name: "기아", price: 112000, high250d: 130000, maxVolumePerSecond: 700 },
-  { code: "373220", name: "LG에너지솔루션", price: 345000, high250d: 420000, maxVolumePerSecond: 200 },
-  { code: "450080", name: "에코프로머티", price: 98000, high250d: 115000, maxVolumePerSecond: 1200 },
-  { code: "247540", name: "에코프로비엠", price: 185000, high250d: 210000, maxVolumePerSecond: 900 },
-  { code: "028300", name: "HLB", price: 85000, high250d: 95000, maxVolumePerSecond: 1100 },
-  { code: "196170", name: "알테오জেন", price: 270000, high250d: 290000, maxVolumePerSecond: 350 },
-  { code: "454910", name: "두산로보틱스", price: 75000, high250d: 88000, maxVolumePerSecond: 1300 },
-  { code: "323410", name: "카카오뱅크", price: 22000, high250d: 28000, maxVolumePerSecond: 2000 },
-  { code: "012330", name: "현대모비스", price: 220000, high250d: 240000, maxVolumePerSecond: 250 },
-  { code: "055550", name: "신한지주", price: 48000, high250d: 55000, maxVolumePerSecond: 1400 },
-  { code: "105560", name: "KB금융", price: 72000, high250d: 82000, maxVolumePerSecond: 1200 },
-  { code: "042660", name: "한화오션", price: 28000, high250d: 34000, maxVolumePerSecond: 1600 },
-  { code: "006400", name: "삼성SDI", price: 380000, high250d: 420000, maxVolumePerSecond: 150 },
-  { code: "051910", name: "LG화학", price: 390000, high250d: 440000, maxVolumePerSecond: 180 },
-  { code: "066570", name: "LG전자", price: 95000, high250d: 105000, maxVolumePerSecond: 850 },
-  { code: "329180", name: "HD현대중공업", price: 135000, high250d: 155000, maxVolumePerSecond: 400 },
-  { code: "015760", name: "한국전력", price: 21000, high250d: 24500, maxVolumePerSecond: 3000 },
-  { code: "003670", name: "포스코퓨처엠", price: 260000, high250d: 295000, maxVolumePerSecond: 300 },
-  { code: "034020", name: "두산에너빌리티", price: 19000, high250d: 22000, maxVolumePerSecond: 4000 },
-  { code: "011200", name: "HMM", price: 16000, high250d: 19500, maxVolumePerSecond: 5000 },
-  { code: "259960", name: "크래프톤", price: 250000, high250d: 280000, maxVolumePerSecond: 200 },
-  { code: "003490", name: "대한항공", price: 23000, high250d: 26000, maxVolumePerSecond: 2500 }
+  { code: "005930", name: "삼성전자", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "000660", name: "SK하이닉스", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "042700", name: "한미반도체", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "035420", name: "NAVER", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "005380", name: "현대차", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "035720", name: "카카오", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "068270", name: "셀트리온", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "005490", name: "POSCO홀딩스", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "000270", name: "기아", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "373220", name: "LG에너지솔루션", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "450080", name: "에코프로머티", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "247540", name: "에코프로비엠", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "028300", name: "HLB", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "196170", name: "알테오젠", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "454910", name: "두산로보틱스", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "323410", name: "카카오뱅크", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "012330", name: "현대모비스", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "055550", name: "신한지주", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "105560", name: "KB금융", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "042660", name: "한화오션", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "006400", name: "삼성SDI", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "051910", name: "LG화학", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "066570", name: "LG전자", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "329180", name: "HD현대중공업", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "015760", name: "한국전력", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "003670", name: "포스코퓨처엠", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "034020", name: "두산에너빌리티", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "011200", name: "HMM", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "259960", name: "크래프톤", price: 0, high250d: 0, maxVolumePerSecond: 0 },
+  { code: "003490", name: "대한항공", price: 0, high250d: 0, maxVolumePerSecond: 0 }
 ];
 
 // Default initial watchlist structure using popular stocks to prevent undefined errors
@@ -61,26 +61,27 @@ const DEFAULT_WATCHLIST: Stock[] = POPULAR_STOCKS.slice(0, 5).map((preset, idx) 
   code: preset.code,
   name: preset.name,
   currentPrice: preset.price,
-  open: preset.price * 0.99,
-  high: preset.price * 1.01,
-  low: preset.price * 0.985,
-  volume: 1200000 - idx * 100000,
-  prevClose: preset.price * 0.992,
-  transactionAmount: 150 + idx * 50,
+  open: preset.price,
+  high: preset.price,
+  low: preset.price,
+  volume: 0,
+  prevClose: preset.price,
+  transactionAmount: 0,
   history250dHigh: preset.high250d,
   maxVolumePerSecond: preset.maxVolumePerSecond,
   kValue: 0.5,
   targetPrice: preset.price, // Unconditionally based on current price
-  bbUpper: preset.price * 1.05,
+  bbUpper: preset.price,
   bbMiddle: preset.price,
-  bbLower: preset.price * 0.95,
-  bbWidth: 0.08,
-  stochK: 50,
-  stochD: 45
+  bbLower: preset.price,
+  bbWidth: 0,
+  stochK: 0,
+  stochD: 0
 }));
 
 // Realistic backward price history generator for indicator bootstrapping
 function generatePriceHistory(endPrice: number, length: number): number[] {
+  if (endPrice === 0) return Array(length).fill(0);
   const history: number[] = [];
   let current = endPrice;
   for (let i = 0; i < length; i++) {
@@ -227,12 +228,12 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
   const tradingMode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
 
   // Real-time local calculation engine status (unconditionally active for standalone execution)
-  const isBridgeConnected = true;
+  
 
   // Monitor Watchlist: exactly 5 slots max
   const [watchlist, setWatchlist] = useState<Stock[]>(() => {
     // Attempt loading from localStorage, otherwise pre-fill with defaults
-    const saved = localStorage.getItem("kiwoom_watchlist_5");
+    const saved = localStorage.getItem("kiwoom_watchlist_6");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -257,7 +258,7 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
   const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
   const [customCode, setCustomCode] = useState("");
   const [customName, setCustomName] = useState("");
-  const [customPrice, setCustomPrice] = useState("10000");
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [searchedStocks, setSearchedStocks] = useState<typeof POPULAR_STOCKS | null>(null);
 
@@ -270,7 +271,7 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
 
   // Persistence of watchlist
   useEffect(() => {
-    localStorage.setItem("kiwoom_watchlist_5", JSON.stringify(watchlist));
+    localStorage.setItem("kiwoom_watchlist_6", JSON.stringify(watchlist));
   }, [watchlist]);
 
   // Synchronize server-side toggle status
@@ -305,183 +306,63 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
 
   // Target price remains constant based on current price at registration/selection as requested
 
-  // Simulation and Auto-Trading Loop (Updates all 5 stocks simultaneously)
+  // Real-time API Market Condition Fetching
   useEffect(() => {
-    if (!isPlaying || !programRunning) return; // Removed isBridgeConnected for fully offline/local client simulation
+    if (!isPlaying || !programRunning) return;
 
-    const interval = setInterval(() => {
-      // Check Trading Hours
-      const startTimeStr = localStorage.getItem("kiwoom_trading_start") || "09:00";
-      const endTimeStr = localStorage.getItem("kiwoom_trading_end") || "15:30";
-      const [startH, startM] = startTimeStr.split(":").map(Number);
-      const [endH, endM] = endTimeStr.split(":").map(Number);
-      const startTotalMins = startH * 60 + startM;
-      const endTotalMins = endH * 60 + endM;
+    const fetchPrices = async () => {
+      const mode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+      const accessToken = sessionStorage.getItem("kiwoom_access_token");
+      if (!accessToken) return;
 
-      setSimMinutes((prev) => {
-        // Halt if outside trading hours
-        if (prev < startTotalMins || prev >= endTotalMins) {
-          // If just crossed the end time, sell everything
-          if (prev >= endTotalMins && prev < endTotalMins + 3) {
-            watchlist.forEach(s => {
-              if (portfolio[s.code]) {
-                const pStock = portfolio[s.code];
-                const log: TradeLog = {
-                  id: `trade-close-${Date.now()}-${s.code}`,
-                  timestamp: simTime,
-                  stockCode: s.code,
-                  stockName: s.name,
-                  strategy: activeStrategy,
-                  action: "SELL",
-                  price: s.currentPrice,
-                  quantity: pStock.quantity,
-                  totalAmount: s.currentPrice * pStock.quantity,
-                  fee: 0,
-                  tax: 0,
-                  orderId: `ORD_AUTO_CLOSE_${Date.now()}`,
-                  status: "COMPLETED",
-                };
-                onTradeExecute(log);
-              }
+      const updatedStocks = await Promise.all(
+        watchlist.map(async (s) => {
+          try {
+            const res = await fetch("/api/dostk/mrkcond", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json;charset=UTF-8",
+                "Authorization": `Bearer ${accessToken}`,
+                "api-id": "ka10001",
+                "x-trading-mode": mode
+              },
+              body: JSON.stringify({ stock_code: s.code })
             });
+
+            if (res.ok) {
+              const data = await res.json();
+              if (data?.output && data.output.price) {
+                return { ...s, currentPrice: parseInt(data.output.price, 10) };
+              }
+            }
+          } catch (e) {
+            console.error("Price fetch error:", e);
           }
-          
-          // Optionally auto-advance time to start of next day or just loop
-          if (prev >= endTotalMins + 60) return startTotalMins; 
-          return prev + 3;
-        }
+          // If we reach here, we didn't get a valid price from the API.
+          // Set to 0 to show N/A as requested by user.
+          return { ...s, currentPrice: 0 };
+        })
+      );
 
-        // Check Daily Profit Target
-        const profitTarget = parseInt(localStorage.getItem("kiwoom_daily_profit_target") || "1000000000"); // Default very high
-        // Calculate current unrealized + realized profit (mocked roughly here)
-        // In a real app, you'd track this more precisely.
-        
-        return prev + 3;
-      });
-
-      // Generate new prices and updated histories locally
-      const updatedPricesMap: { [code: string]: { newPrice: number; history: number[] } } = {};
-      watchlist.forEach((s) => {
-        const changePercent = (Math.random() - 0.495) * 0.015;
-        const newPrice = Math.round(s.currentPrice * (1 + changePercent));
-        const currentHist = chartDataMap[s.code] || generatePriceHistory(s.currentPrice, 220);
-        const updatedHist = [...currentHist.slice(1), newPrice];
-        updatedPricesMap[s.code] = {
-          newPrice,
-          history: updatedHist
-        };
-      });
-
-      // Update chartDataMap state
-      setChartDataMap((prev) => {
-        const nextMap = { ...prev };
-        Object.entries(updatedPricesMap).forEach(([code, data]) => {
-          nextMap[code] = data.history;
+      // Only update if something changed to avoid infinite loop
+      setWatchlist((prev) => {
+        let changed = false;
+        const next = prev.map((old, idx) => {
+          if (old.currentPrice !== updatedStocks[idx].currentPrice) {
+            changed = true;
+            return updatedStocks[idx];
+          }
+          return old;
         });
-        return nextMap;
+        return changed ? next : prev;
       });
+    };
 
-      // Update watchlist with new prices and calculated premium quantitative indicators
-      setWatchlist((prevWatchlist) => {
-        return prevWatchlist.map((s) => {
-          const data = updatedPricesMap[s.code];
-          if (!data) return s;
-
-          const { newPrice, history } = data;
-          const dailyHigh = Math.max(s.high, newPrice);
-          const dailyLow = Math.min(s.low, newPrice);
-          const dailyChange = ((newPrice - s.prevClose) / s.prevClose) * 100;
-
-          // Compute exact indicators from updated history
-          const ema200Val = calculateEMA(history, 200);
-          const macdRes = calculateMACD(history);
-          const rsi14Val = calculateRSI(history, 14);
-          const atr14Val = calculateATR(history, 14);
-
-          // Dispatch drop/surge notifications
-          const dropTh = parseFloat(localStorage.getItem("kiwoom_discord_drop_th") || "2.0");
-          const surgeTh = parseFloat(localStorage.getItem("kiwoom_discord_surge_th") || "3.0");
-
-          const dropKey = `${s.code}-drop-${Math.floor(Math.abs(dailyChange) / dropTh)}`;
-          const surgeKey = `${s.code}-surge-${Math.floor(Math.abs(dailyChange) / surgeTh)}`;
-
-          const webhookUrl = localStorage.getItem("kiwoom_discord_webhook") || "";
-          const mentionId = localStorage.getItem("kiwoom_discord_mention") || "";
-          const alarmChannelId = localStorage.getItem("kiwoom_discord_alarm_channel_id") || "";
-
-          // Drop warning
-          if (dailyChange <= -dropTh && !triggeredAlertsRef.current[dropKey]) {
-            triggeredAlertsRef.current[dropKey] = true;
-            fetch("/api/discord/alert", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                webhookUrl,
-                mentionId,
-                channelId: alarmChannelId,
-                title: `📉 [위험 급락 감지] ${s.name} (${s.code}) 임계 이탈`,
-                description: `감시 주적인 ${s.name} 주가가 당일 -${dropTh}% 임계 이탈 하회 폭락 중입니다. 리스크 제어를 가동합니다.`,
-                alertType: "SUDDEN_DROP",
-                color: 0xef4444,
-                fields: [
-                  { name: "종목명", value: `${s.name} (${s.code})`, inline: true },
-                  { name: "현재가", value: `${newPrice.toLocaleString()}원`, inline: true },
-                  { name: "당일 변동률", value: `${dailyChange.toFixed(2)}%`, inline: true }
-                ]
-              })
-            }).catch(e => console.error(e));
-          }
-
-          // Surge alert
-          if (dailyChange >= surgeTh && !triggeredAlertsRef.current[surgeKey]) {
-            triggeredAlertsRef.current[surgeKey] = true;
-            fetch("/api/discord/alert", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                webhookUrl,
-                mentionId,
-                channelId: alarmChannelId,
-                title: `📈 [급등 돌파 관측] ${s.name} (${s.code}) 강세 돌파`,
-                description: `지정 임계 폭발 상승선(+${surgeTh}%)을 돌파하며 가파른 시세가 형성되고 있습니다.`,
-                alertType: "SUDDEN_SURGE",
-                color: 0x10b981,
-                fields: [
-                  { name: "종목명", value: `${s.name} (${s.code})`, inline: true },
-                  { name: "현재가", value: `${newPrice.toLocaleString()}원`, inline: true },
-                  { name: "당일 변동률", value: `${dailyChange.toFixed(2)}%`, inline: true }
-                ]
-              })
-            }).catch(e => console.error(e));
-          }
-
-          return {
-            ...s,
-            currentPrice: newPrice,
-            high: dailyHigh,
-            low: dailyLow,
-            targetPrice: s.targetPrice,
-            bbUpper: s.bbUpper,
-            bbMiddle: s.bbMiddle,
-            bbLower: s.bbLower,
-            stochK: s.stochK,
-            stochD: s.stochD,
-            ema200: ema200Val,
-            rsi14: rsi14Val,
-            macdLine: macdRes.macdLine,
-            signalLine: macdRes.signalLine,
-            macdHistogram: macdRes.histogram,
-            macdPrevHistogram: macdRes.prevHistogram,
-            atr14: atr14Val
-          };
-        });
-      });
-    }, 1500);
-
+    const interval = setInterval(fetchPrices, 2000);
     return () => clearInterval(interval);
-  }, [isPlaying, programRunning, watchlist, activeStrategy, portfolio, onTradeExecute]);
+  }, [isPlaying, programRunning, watchlist]);
 
-  // Watchlist individual strategy signals trigger check (Unified Auto-Trading Engine)
+  // Strategy Execution Engine
   useEffect(() => {
     if (!isPlaying || !programRunning) return;
 
@@ -529,24 +410,45 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
             const slPrice = Math.round(entryPrice - deltaSL);
             const tpPrice = Math.round(entryPrice + (atr * 3.0));
 
-            const log: TradeLog = {
-              id: `trade-buy-${Date.now()}-${s.code}`,
-              timestamp: simTime,
-              stockCode: s.code,
-              stockName: s.name,
-              strategy: activeStrategy,
-              action: "BUY",
-              price: entryPrice,
-              quantity: sharesToBuy,
-              totalAmount: entryPrice * sharesToBuy,
-              fee: 0,
-              tax: 0,
-              orderId: `ORD_BUY_${Date.now().toString().slice(-6)}`,
-              status: "COMPLETED",
-              stopLossPrice: slPrice,
-              takeProfitPrice: tpPrice
-            };
-            onTradeExecute(log);
+            const mode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+            const accessToken = sessionStorage.getItem("kiwoom_access_token") || "";
+            const accountNo = localStorage.getItem("kiwoom_account_no") || "";
+            fetch("/api/dostk/ordr", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json;charset=UTF-8",
+                "Authorization": `Bearer ${accessToken}`,
+                "api-id": "kt10000",
+                "x-trading-mode": mode
+              },
+              body: JSON.stringify({
+                account_no: accountNo,
+                stock_code: s.code,
+                qty: String(sharesToBuy),
+                price: String(s.currentPrice)
+              })
+            }).then(res => res.json()).then(orderData => {
+              if (orderData?.rt_cd === "0") {
+                const log: TradeLog = {
+                  id: `trade-buy-${Date.now()}-${s.code}`,
+                  timestamp: simTime,
+                  stockCode: s.code,
+                  stockName: s.name,
+                  strategy: activeStrategy,
+                  action: "BUY",
+                  price: entryPrice,
+                  quantity: sharesToBuy,
+                  totalAmount: entryPrice * sharesToBuy,
+                  fee: 0,
+                  tax: 0,
+                  orderId: orderData.output?.order_no || `ORD_BUY_${Date.now().toString().slice(-6)}`,
+                  status: "COMPLETED",
+                  stopLossPrice: slPrice,
+                  takeProfitPrice: tpPrice
+                };
+                onTradeExecute(log);
+              }
+            }).catch(console.error);
           }
         }
       } else {
@@ -580,22 +482,44 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
           }
 
           lastTradeTimeRef.current = now;
-          const log: TradeLog = {
-            id: `trade-sell-${Date.now()}-${s.code}`,
-            timestamp: simTime,
-            stockCode: s.code,
-            stockName: s.name,
-            strategy: activeStrategy,
-            action: "SELL",
-            price: s.currentPrice,
-            quantity: pStock.quantity,
-            totalAmount: s.currentPrice * pStock.quantity,
-            fee: 0,
-            tax: 0,
-            orderId: `ORD_SELL_${Date.now().toString().slice(-6)}`,
-            status: "COMPLETED",
-          };
-          onTradeExecute(log);
+          const mode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+          const accessToken = sessionStorage.getItem("kiwoom_access_token") || "";
+          const accountNo = localStorage.getItem("kiwoom_account_no") || "";
+          
+          fetch("/api/dostk/ordr", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json;charset=UTF-8",
+              "Authorization": `Bearer ${accessToken}`,
+              "api-id": "kt10001",
+              "x-trading-mode": mode
+            },
+            body: JSON.stringify({
+              account_no: accountNo,
+              stock_code: s.code,
+              qty: String(pStock.quantity),
+              price: String(s.currentPrice)
+            })
+          }).then(res => res.json()).then(orderData => {
+            if (orderData?.rt_cd === "0") {
+              const log: TradeLog = {
+                id: `trade-sell-${Date.now()}-${s.code}`,
+                timestamp: simTime,
+                stockCode: s.code,
+                stockName: s.name,
+                strategy: activeStrategy,
+                action: "SELL",
+                price: s.currentPrice,
+                quantity: pStock.quantity,
+                totalAmount: s.currentPrice * pStock.quantity,
+                fee: 0,
+                tax: 0,
+                orderId: orderData.output?.order_no || `ORD_SELL_${Date.now().toString().slice(-6)}`,
+                status: "COMPLETED",
+              };
+              onTradeExecute(log);
+            }
+          }).catch(console.error);
         }
       }
     });
@@ -990,11 +914,11 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
                     <div className="flex justify-between items-end border-t border-gray-900/50 pt-2 font-mono">
                       <div>
                         <span className="text-[10.5px] font-semibold text-gray-200">
-                          {isBridgeConnected ? `${stock.currentPrice.toLocaleString()}원` : "N/A"}
+                          {stock.currentPrice > 0 ? `${stock.currentPrice.toLocaleString()}원` : "N/A"}
                         </span>
                       </div>
-                      <span className={`text-[10px] font-bold ${!isBridgeConnected ? "text-gray-500" : dailyChange >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                        {isBridgeConnected ? `${dailyChange >= 0 ? "+" : ""}${dailyChange.toFixed(2)}%` : "N/A"}
+                      <span className={`text-[10px] font-bold ${stock.currentPrice === 0 ? "text-gray-500" : dailyChange >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                        {stock.currentPrice > 0 ? `${dailyChange >= 0 ? "+" : ""}${dailyChange.toFixed(2)}%` : "N/A"}
                       </span>
                     </div>
                   </div>
@@ -1054,7 +978,7 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
 
             {/* Simulated Live SVG Chart panel */}
             <div className="w-full h-64 bg-black/40 border border-gray-900 rounded-xl relative p-3 flex items-center justify-center">
-              {!isBridgeConnected ? (
+              {selectedStock.currentPrice === 0 ? (
                 <div className="text-center space-y-2">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20 animate-pulse">
                     WAITING_FOR_DATA_FEED (N/A)
@@ -1147,22 +1071,22 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
                   <div className="flex justify-between text-[10px] text-gray-500 mb-1">
                     <span>Stochastic Fast K</span>
                     <span className="font-bold text-gray-300 font-mono">
-                      {isBridgeConnected ? selectedStock.stochK : "N/A"}
+                      {selectedStock.currentPrice > 0 ? selectedStock.stochK : "N/A"}
                     </span>
                   </div>
                   <div className="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-purple-500 h-full rounded-full" style={{ width: `${isBridgeConnected ? selectedStock.stochK : 0}%` }} />
+                    <div className="bg-purple-500 h-full rounded-full" style={{ width: `${selectedStock.currentPrice > 0 ? selectedStock.stochK : 0}%` }} />
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between text-[10px] text-gray-500 mb-1">
                     <span>Stochastic Slow D</span>
                     <span className="font-bold text-gray-300 font-mono">
-                      {isBridgeConnected ? selectedStock.stochD : "N/A"}
+                      {selectedStock.currentPrice > 0 ? selectedStock.stochD : "N/A"}
                     </span>
                   </div>
                   <div className="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-amber-500 h-full rounded-full" style={{ width: `${isBridgeConnected ? selectedStock.stochD : 0}%` }} />
+                    <div className="bg-amber-500 h-full rounded-full" style={{ width: `${selectedStock.currentPrice > 0 ? selectedStock.stochD : 0}%` }} />
                   </div>
                 </div>
               </div>
@@ -1214,16 +1138,16 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
                       <td className="py-3 text-right font-semibold">{pStock.quantity.toLocaleString()}주</td>
                       <td className="py-3 text-right text-gray-400">{pStock.purchasePrice.toLocaleString()}원</td>
                       <td className="py-3 text-right font-semibold">
-                        {isBridgeConnected ? `${currentPrice.toLocaleString()}원` : "N/A"}
+                        {currentPrice > 0 ? `${currentPrice.toLocaleString()}원` : "N/A"}
                       </td>
                       <td className="py-3 text-right font-bold text-gray-100">
-                        {isBridgeConnected ? `${totalCurrentAmount.toLocaleString()}원` : "N/A"}
+                        {currentPrice > 0 ? `${totalCurrentAmount.toLocaleString()}원` : "N/A"}
                       </td>
                       <td className="py-3 text-right text-gray-500">
-                        {isBridgeConnected ? `${pStock.highestPriceSincePurchase.toLocaleString()}원` : "N/A"}
+                        {currentPrice > 0 ? `${pStock.highestPriceSincePurchase.toLocaleString()}원` : "N/A"}
                       </td>
-                      <td className={`py-3 text-right font-bold ${!isBridgeConnected ? "text-gray-500" : isProfit ? "text-emerald-400" : "text-red-400"}`}>
-                        {isBridgeConnected ? `${isProfit ? "+" : ""}${profitPct.toFixed(2)}%` : "N/A"}
+                      <td className={`py-3 text-right font-bold ${currentPrice === 0 ? "text-gray-500" : isProfit ? "text-emerald-400" : "text-red-400"}`}>
+                        {currentPrice > 0 ? `${isProfit ? "+" : ""}${profitPct.toFixed(2)}%` : "N/A"}
                       </td>
                     </tr>
                   );
@@ -1592,33 +1516,22 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
                       className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 font-mono text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <label className="text-[9px] text-gray-400 block mb-1">종목 명</label>
                     <input
                       type="text"
                       required
-                      value={customName}
-                      onChange={(e) => setCustomName(e.target.value)}
-                      placeholder="커스텀"
-                      className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[9px] text-gray-400 block mb-1">현재가 (기준가 고정)</label>
-                    <input
-                      type="number"
-                      required
-                      value={customPrice}
-                      onChange={(e) => setCustomPrice(e.target.value)}
-                      placeholder="10000"
-                      className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 text-xs text-gray-200 focus:outline-none focus:border-indigo-500"
+                      readOnly
+                      value={isFetchingInfo ? "불러오는 중..." : customName}
+                      placeholder="종목코드를 입력하면 자동으로 불러옵니다"
+                      className="w-full bg-gray-950 border border-gray-900 rounded-lg p-2 text-xs text-gray-500 focus:outline-none"
                     />
                   </div>
                   <button
                     type="submit"
                     className="col-span-3 py-2 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 rounded-xl text-xs font-bold transition-all mt-1"
                   >
-                    수동 등록 완료하기 (기준가는 입력한 현재가로 자동 고정)
+                    수동 등록 완료하기 (기준가는 실시간 API로 자동 조회)
                   </button>
                 </form>
               </div>
