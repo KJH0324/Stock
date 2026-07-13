@@ -1,57 +1,112 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/components/MainTab.tsx', 'utf8');
 
-// Remove the global isBridgeConnected
-code = code.replace(/const isBridgeConnected = false;/g, "");
+// 1. Add isFetchingInfo state and effect
+const stateToAdd = `
+  const [isFetchingInfo, setIsFetchingInfo] = useState(false);
+  useEffect(() => {
+    if (!customCode || customCode.length !== 6) return;
+    const fetchInfo = async () => {
+      setIsFetchingInfo(true);
+      try {
+        const mode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+        const accessToken = sessionStorage.getItem("kiwoom_access_token");
+        if (!accessToken) return;
+        const res = await fetch("/api/dostk/mrkcond", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            "Authorization": \`Bearer \${accessToken}\`,
+            "api-id": "ka10001",
+            "x-trading-mode": mode
+          },
+          body: JSON.stringify({ stock_code: customCode })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.output?.name) {
+            setCustomName(data.output.name);
+          } else {
+            setCustomName("");
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsFetchingInfo(false);
+      }
+    };
+    fetchInfo();
+  }, [customCode]);
+`;
 
-// In watchlist map
-code = code.replace(
-  /isBridgeConnected \? \`\$\{stock.currentPrice/g,
-  "stock.currentPrice > 0 ? \\`${stock.currentPrice"
-);
-code = code.replace(
-  /\!isBridgeConnected \? "text-gray-500"/g,
-  "stock.currentPrice === 0 ? \"text-gray-500\""
-);
-code = code.replace(
-  /isBridgeConnected \? \`\$\{dailyChange/g,
-  "stock.currentPrice > 0 ? \\`${dailyChange"
-);
+code = code.replace("  const [customName, setCustomName] = useState(\"\");", "  const [customName, setCustomName] = useState(\"\");" + stateToAdd);
 
-// In selectedStock area
-code = code.replace(
-  /\{\!isBridgeConnected \?/g,
-  "{selectedStock.currentPrice === 0 ?"
-);
-code = code.replace(
-  /isBridgeConnected \? selectedStock.stochK/g,
-  "selectedStock.currentPrice > 0 ? selectedStock.stochK"
-);
-code = code.replace(
-  /isBridgeConnected \? selectedStock.stochD/g,
-  "selectedStock.currentPrice > 0 ? selectedStock.stochD"
-);
+// 2. Replace handleCustomSubmit entirely
+const oldSubmitRegex = /const handleCustomSubmit = \(e: FormEvent\) => \{[\s\S]*?setSearchedStocks\(null\); \/\/ Reset search state\n  \};/;
 
-// In portfolio map
-code = code.replace(
-  /isBridgeConnected \? \`\$\{currentPrice\.toLocaleString/g,
-  "currentPrice > 0 ? \\`${currentPrice.toLocaleString"
-);
-code = code.replace(
-  /isBridgeConnected \? \`\$\{totalCurrentAmount\.toLocaleString/g,
-  "currentPrice > 0 ? \\`${totalCurrentAmount.toLocaleString"
-);
-code = code.replace(
-  /isBridgeConnected \? \`\$\{pStock\.highestPriceSincePurchase\.toLocaleString/g,
-  "currentPrice > 0 ? \\`${pStock.highestPriceSincePurchase.toLocaleString"
-);
-code = code.replace(
-  /\!isBridgeConnected \? "text-gray-500"/g,
-  "currentPrice === 0 ? \"text-gray-500\""
-);
-code = code.replace(
-  /isBridgeConnected \? \`\$\{isProfit/g,
-  "currentPrice > 0 ? \\`${isProfit"
-);
+const newSubmit = `
+  const handleCustomSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (editingSlotIndex === null || !customCode) return;
+    
+    // Attempt to fetch price one last time for basePrice
+    let basePrice = 0;
+    let fetchedName = customName || customCode;
+    try {
+        const mode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+        const accessToken = sessionStorage.getItem("kiwoom_access_token");
+        if (accessToken) {
+            const res = await fetch("/api/dostk/mrkcond", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json;charset=UTF-8",
+                "Authorization": \`Bearer \${accessToken}\`,
+                "api-id": "ka10001",
+                "x-trading-mode": mode
+              },
+              body: JSON.stringify({ stock_code: customCode })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data?.output?.price) basePrice = parseInt(data.output.price, 10);
+                if (data?.output?.name) fetchedName = data.output.name;
+            }
+        }
+    } catch (e) {}
 
+    setWatchlist(prev => {
+      const copy = [...prev];
+      copy[editingSlotIndex] = {
+        code: customCode,
+        name: fetchedName,
+        currentPrice: basePrice,
+        open: basePrice,
+        high: basePrice,
+        low: basePrice,
+        volume: 0,
+        prevClose: basePrice,
+        transactionAmount: 0,
+        history250dHigh: basePrice,
+        maxVolumePerSecond: 0,
+        kValue: 0.5,
+        targetPrice: basePrice,
+        bbUpper: basePrice,
+        bbMiddle: basePrice,
+        bbLower: basePrice,
+        bbWidth: 0,
+        stochK: 0,
+        stochD: 0
+      };
+      return copy;
+    });
+    setEditingSlotIndex(null);
+    setCustomCode("");
+    setCustomName("");
+    setSearchQuery("");
+    setSearchedStocks(null);
+  };
+`;
+
+code = code.replace(oldSubmitRegex, newSubmit);
 fs.writeFileSync('src/components/MainTab.tsx', code);

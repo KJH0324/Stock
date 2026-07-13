@@ -57,27 +57,29 @@ const POPULAR_STOCKS = [
 ];
 
 // Default initial watchlist structure using popular stocks to prevent undefined errors
-const DEFAULT_WATCHLIST: Stock[] = POPULAR_STOCKS.slice(0, 5).map((preset, idx) => ({
-  code: preset.code,
-  name: preset.name,
-  currentPrice: preset.price,
-  open: preset.price,
-  high: preset.price,
-  low: preset.price,
+
+const DEFAULT_WATCHLIST: Stock[] = Array.from({ length: 5 }).map((_, idx) => ({
+  code: `EMPTY${idx}`,
+  name: "비어있음",
+  currentPrice: 0,
+  open: 0,
+  high: 0,
+  low: 0,
   volume: 0,
-  prevClose: preset.price,
+  prevClose: 0,
   transactionAmount: 0,
-  history250dHigh: preset.high250d,
-  maxVolumePerSecond: preset.maxVolumePerSecond,
+  history250dHigh: 0,
+  maxVolumePerSecond: 0,
   kValue: 0.5,
-  targetPrice: preset.price, // Unconditionally based on current price
-  bbUpper: preset.price,
-  bbMiddle: preset.price,
-  bbLower: preset.price,
+  targetPrice: 0,
+  bbUpper: 0,
+  bbMiddle: 0,
+  bbLower: 0,
   bbWidth: 0,
   stochK: 0,
   stochD: 0
 }));
+
 
 // Realistic backward price history generator for indicator bootstrapping
 function generatePriceHistory(endPrice: number, length: number): number[] {
@@ -258,6 +260,42 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
   const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
   const [customCode, setCustomCode] = useState("");
   const [customName, setCustomName] = useState("");
+  const [isFetchingInfo, setIsFetchingInfo] = useState(false);
+  useEffect(() => {
+    if (!customCode || customCode.length !== 6) return;
+    const fetchInfo = async () => {
+      setIsFetchingInfo(true);
+      try {
+        const mode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+        const accessToken = sessionStorage.getItem("kiwoom_access_token");
+        if (!accessToken) return;
+        const res = await fetch("/api/dostk/mrkcond", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            "Authorization": `Bearer ${accessToken}`,
+            "api-id": "ka10001",
+            "x-trading-mode": mode
+          },
+          body: JSON.stringify({ stock_code: customCode })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.output?.name) {
+            setCustomName(data.output.name);
+          } else {
+            setCustomName("");
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsFetchingInfo(false);
+      }
+    };
+    fetchInfo();
+  }, [customCode]);
+
   
   const [searchQuery, setSearchQuery] = useState("");
   const [searchedStocks, setSearchedStocks] = useState<typeof POPULAR_STOCKS | null>(null);
@@ -317,6 +355,7 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
 
       const updatedStocks = await Promise.all(
         watchlist.map(async (s) => {
+          if (s.code.startsWith("EMPTY")) return s;
           try {
             const res = await fetch("/api/dostk/mrkcond", {
               method: "POST",
@@ -367,6 +406,7 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
     if (!isPlaying || !programRunning) return;
 
     watchlist.forEach((s) => {
+      if (s.code.startsWith("EMPTY")) return;
       const isHeld = portfolio[s.code] !== undefined;
       const now = Date.now();
 
@@ -569,43 +609,68 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
     setSearchedStocks(null); // Reset search state
   };
 
-  const handleCustomSubmit = (e: FormEvent) => {
+  
+  const handleCustomSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (editingSlotIndex === null || !customCode || !customName) return;
+    if (editingSlotIndex === null || !customCode) return;
+    
+    // Attempt to fetch price one last time for basePrice
+    let basePrice = 0;
+    let fetchedName = customName || customCode;
+    try {
+        const mode = localStorage.getItem("kiwoom_trading_mode") || "MOCK";
+        const accessToken = sessionStorage.getItem("kiwoom_access_token");
+        if (accessToken) {
+            const res = await fetch("/api/dostk/mrkcond", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json;charset=UTF-8",
+                "Authorization": `Bearer ${accessToken}`,
+                "api-id": "ka10001",
+                "x-trading-mode": mode
+              },
+              body: JSON.stringify({ stock_code: customCode })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data?.output?.price) basePrice = parseInt(data.output.price, 10);
+                if (data?.output?.name) fetchedName = data.output.name;
+            }
+        }
+    } catch (e) {}
 
-    const basePrice = parseInt(customPrice) || 10000;
     setWatchlist(prev => {
       const copy = [...prev];
       copy[editingSlotIndex] = {
         code: customCode,
-        name: customName,
+        name: fetchedName,
         currentPrice: basePrice,
-        open: basePrice * 0.99,
-        high: basePrice * 1.01,
-        low: basePrice * 0.985,
-        volume: 800000,
-        prevClose: basePrice * 0.991,
-        transactionAmount: 180,
-        history250dHigh: basePrice * 1.15,
-        maxVolumePerSecond: 800,
+        open: basePrice,
+        high: basePrice,
+        low: basePrice,
+        volume: 0,
+        prevClose: basePrice,
+        transactionAmount: 0,
+        history250dHigh: basePrice,
+        maxVolumePerSecond: 0,
         kValue: 0.5,
-        targetPrice: basePrice, // Set reference price unconditionally to the current price
-        bbUpper: basePrice * 1.05,
+        targetPrice: basePrice,
+        bbUpper: basePrice,
         bbMiddle: basePrice,
-        bbLower: basePrice * 0.95,
-        bbWidth: 0.07,
-        stochK: 50,
-        stochD: 45
+        bbLower: basePrice,
+        bbWidth: 0,
+        stochK: 0,
+        stochD: 0
       };
       return copy;
     });
-
     setEditingSlotIndex(null);
     setCustomCode("");
     setCustomName("");
-    setSearchQuery(""); // Reset search query on success
-    setSearchedStocks(null); // Reset search state
+    setSearchQuery("");
+    setSearchedStocks(null);
   };
+
 
   const fetchAiAnalysis = async () => {
     setAiLoading(true);
@@ -961,7 +1026,7 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
             <div className="flex justify-between items-center border-b border-gray-900 pb-3">
               <div>
                 <h3 className="text-sm font-bold text-gray-200">{selectedStock.name} 실시간 차트 관측</h3>
-                <span className="text-[10px] font-mono text-gray-500">{selectedStock.code} | 전일거래대금: {selectedStock.transactionAmount}억</span>
+                <span className="text-[10px] font-mono text-gray-500">{selectedStock.code} | 전일거래대금: {selectedStock.transactionAmount === 0 ? "N/A" : `${selectedStock.transactionAmount}억`}</span>
               </div>
 
               {portfolio[selectedStock.code] ? (
@@ -984,7 +1049,7 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
                     WAITING_FOR_DATA_FEED (N/A)
                   </span>
                   <p className="text-xs text-gray-500">
-                    로컬 브릿지 연결 대기 중. 실시간 시세를 연동해 주십시오.
+                    {selectedStock.code.startsWith('EMPTY') ? "선택된 감시 슬롯이 비어있습니다. 종목을 등록해주세요." : "로컬 브릿지 연결 대기 중. 실시간 시세를 연동해 주십시오."}
                   </p>
                 </div>
               ) : (
@@ -1485,7 +1550,7 @@ export default function MainTab({ onTradeExecute, portfolio, balance }: MainTabP
                       >
                         <div>
                           <div className="text-xs font-bold text-gray-100 font-sans">{preset.name}</div>
-                          <span className="text-[10px] text-gray-500">{preset.code} | 기준 가격(현재가): {preset.price.toLocaleString()}원 | 최대거래량/초: {preset.maxVolumePerSecond.toLocaleString()}주</span>
+                          <span className="text-[10px] text-gray-500">{preset.code} | 기준 가격(현재가): {preset.price.toLocaleString()}원 | 최대거래량/초: {preset.maxVolumePerSecond === 0 ? "N/A" : `${preset.maxVolumePerSecond.toLocaleString()}주`}</span>
                         </div>
                         <button
                           type="button"

@@ -23,7 +23,7 @@ interface SettingsTabProps {
 export default function SettingsTab({ onFeeRateChange, currentFeeRate }: SettingsTabProps) {
   // Persisted state hooks
   const [tradingMode, setTradingMode] = useState(() => localStorage.getItem("kiwoom_trading_mode") || "MOCK");
-  const [accountNo, setAccountNo] = useState(() => localStorage.getItem("kiwoom_account_no") || "5023-4921-11");
+  const [accountNo, setAccountNo] = useState(() => localStorage.getItem("kiwoom_account_no") || "");
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("kiwoom_api_key") || "");
   const [apiSecret, setApiSecret] = useState(() => localStorage.getItem("kiwoom_api_secret") || "");
   const [certPassword, setCertPassword] = useState(() => localStorage.getItem("kiwoom_cert_password") || "");
