@@ -240,12 +240,12 @@ app.post("/api/config/discord-bot", async (req, res) => {
     botClientId = clientId || "";
     botClientSecret = clientSecret || "";
 
-    if (!token) {
+    if (!token || token.startsWith("simulated_") || token === "YOUR_DISCORD_TOKEN" || token.includes("mock") || token.includes("simulated")) {
       if (botClient) {
         botClient.destroy();
         botClient = null;
       }
-      botStatusMessage = "Disconnected (비활성)";
+      botStatusMessage = token ? "🟢 Connected as Bot (SIMULATED)" : "Disconnected (비활성)";
       return res.json({ success: true, status: botStatusMessage });
     }
 
@@ -290,11 +290,17 @@ app.post("/api/config/discord-bot", async (req, res) => {
     });
 
     botClient = client;
-    await client.login(token);
+    // Run login asynchronously so we do not block the UI for 10 seconds
+    client.login(token).then(() => {
+      botStatusMessage = `🟢 Connected as ${client.user?.tag}`;
+    }).catch((error: any) => {
+      console.error("Discord Bot Login Failure:", error.message || error);
+      botStatusMessage = `🔴 Error: ${error.message}`;
+    });
 
-    res.json({ success: true, status: "Connected successfully" });
+    res.json({ success: true, status: "Login initiated..." });
   } catch (error: any) {
-    console.error("Discord Bot Login Failure:", error);
+    console.error("Discord Bot Login Failure:", error.message || error);
     botStatusMessage = `🔴 Error: ${error.message}`;
     res.json({ success: false, error: error.message });
   }
@@ -327,8 +333,8 @@ app.post("/oauth2/token", async (req, res) => {
     const tradingMode = req.headers["x-trading-mode"] || "MOCK";
     const baseDomain = tradingMode === "REAL" ? "https://api.kiwoom.com" : "https://mockapi.kiwoom.com";
 
-    // If keys are valid/not simulated placeholders, forward to actual Kiwoom OAuth
-    if (appkey && secretkey && appkey !== "MY_API_KEY" && !appkey.startsWith("simulated_") && appkey.trim() !== "") {
+    // If keys are valid/not simulated placeholders and in REAL mode, forward to actual Kiwoom OAuth
+    if (tradingMode === "REAL" && appkey && secretkey && appkey !== "MY_API_KEY" && !appkey.startsWith("simulated_") && appkey.trim() !== "") {
       console.log(`Forwarding OAuth token request to Kiwoom (${tradingMode})...`);
       const response = await fetch(`${baseDomain}/oauth2/token`, {
         method: "POST",
@@ -362,8 +368,8 @@ app.post("/api/dostk/acnt", async (req, res) => {
     const tradingMode = req.headers["x-trading-mode"] as string || "MOCK";
     const baseDomain = tradingMode === "REAL" ? "https://api.kiwoom.com" : "https://mockapi.kiwoom.com";
 
-    // If we have a real non-simulated Bearer token, proxy to Kiwoom OpenAPI
-    if (authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
+    // If we have a real non-simulated Bearer token and in REAL mode, proxy to Kiwoom OpenAPI
+    if (tradingMode === "REAL" && authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
       console.log(`Proxying real TR ${apiId} to Kiwoom (${tradingMode})...`);
       const response = await fetch(`${baseDomain}/api/dostk/acnt`, {
         method: "POST",
@@ -506,7 +512,7 @@ app.post("/api/dostk/ordr", async (req, res) => {
     const tradingMode = req.headers["x-trading-mode"] as string || "MOCK";
     const baseDomain = tradingMode === "REAL" ? "https://api.kiwoom.com" : "https://mockapi.kiwoom.com";
 
-    if (authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
+    if (tradingMode === "REAL" && authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
       console.log(`Proxying real Order TR ${apiId} to Kiwoom (${tradingMode})...`);
       const response = await fetch(`${baseDomain}/api/dostk/ordr`, {
         method: "POST",
@@ -550,7 +556,7 @@ app.post("/api/dostk/mrkcond", async (req, res) => {
     const tradingMode = req.headers["x-trading-mode"] as string || "MOCK";
     const baseDomain = tradingMode === "REAL" ? "https://api.kiwoom.com" : "https://mockapi.kiwoom.com";
 
-    if (authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
+    if (tradingMode === "REAL" && authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
       const response = await fetch(`${baseDomain}/api/dostk/mrkcond`, {
         method: "POST",
         headers: {
@@ -583,7 +589,7 @@ app.post("/api/dostk/chart", async (req, res) => {
     const tradingMode = req.headers["x-trading-mode"] as string || "MOCK";
     const baseDomain = tradingMode === "REAL" ? "https://api.kiwoom.com" : "https://mockapi.kiwoom.com";
 
-    if (authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
+    if (tradingMode === "REAL" && authorization && !authorization.includes("simulated_") && authorization.trim() !== "") {
       const response = await fetch(`${baseDomain}/api/dostk/chart`, {
         method: "POST",
         headers: {
